@@ -1,0 +1,56 @@
+# ── Compiled output ──
+/dist
+/build
+/generated/prisma
+
+# ── Dependencies ──
+node_modules/
+
+# ── Frontend (test only, not included in repo) ──
+frontend/
+
+# ── Environment variables ──
+.env
+.env.*
+!.env.example
+
+# ── Logs ──
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ── Test & Coverage ──
+/coverage
+/.nyc_output
+
+# ── Railway ──
+.railway/
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+
+# ── IDE ──
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+*.sublime-project
+
+# ── Runtime ──
+pids/
+*.pid
+*.seed
+*.pid.lock
+.temp
+.tmp
+
+# ── Diagnostic reports ──
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
