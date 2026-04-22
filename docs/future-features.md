@@ -120,50 +120,26 @@ deleteUser() { ... }
 
 ### 🟡 High — ควรแก้ก่อน launch
 
-#### 4. Rate Limiting บน Auth endpoints
-**ไฟล์:** `src/main.ts`, ติดตั้ง `@nestjs/throttler`
+#### ~~4. Rate Limiting บน Auth endpoints~~ ✅ แก้แล้ว
+**ไฟล์:** `src/app.module.ts`, `src/auth/auth.controller.ts`
 
-ตอนนี้ `/auth/login` และ `/auth/register` ไม่มีการจำกัด request ทำให้ brute force ได้อิสระ
+ติดตั้ง `@nestjs/throttler` และตั้งค่าดังนี้:
+- Global default: **60 req/นาที** ต่อ IP (ทุก endpoint)
+- `POST /auth/login`: **10 req/นาที** ต่อ IP
+- `POST /auth/register`: **5 req/นาที** ต่อ IP
+- `POST /auth/google`: **10 req/นาที** ต่อ IP
 
-```bash
-npm install @nestjs/throttler
-```
+เกินกำหนด → `429 Too Many Requests`
 
-```typescript
-// main.ts หรือ AppModule
-ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }])
+#### ~~5. เพิ่ม Helmet (HTTP Security Headers)~~ ✅ แก้แล้ว
+**ไฟล์:** `src/main.ts`
 
-// auth.controller.ts
-@UseGuards(ThrottlerGuard)
-@Post('login')
-```
+ติดตั้ง `helmet` และเพิ่ม `app.use(helmet())` ก่อน middleware อื่น ทำให้ทุก response มี security headers ครบ ได้แก่ `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`, `Referrer-Policy`
 
-#### 5. เพิ่ม Helmet (HTTP Security Headers)
-**ไฟล์:** `src/main.ts`, ติดตั้ง `helmet`
-
-ไม่มี headers เช่น `X-Frame-Options`, `Content-Security-Policy`, `X-XSS-Protection` เลย
-
-```bash
-npm install helmet
-```
-
-```typescript
-import helmet from 'helmet';
-app.use(helmet());
-```
-
-#### 6. JWT Strategy ตรวจสอบ user ใน DB
+#### ~~6. JWT Strategy ตรวจสอบ user ใน DB~~ ✅ แก้แล้ว
 **ไฟล์:** `src/auth/jwt.strategy.ts`
 
-ตอนนี้ `validate()` ไม่ query DB เลย ถ้า delete user ออกไปแล้ว token เดิมยังใช้งานได้จนหมดอายุ
-
-```typescript
-async validate(payload: any) {
-  const user = await this.usersService.findById(payload.sub);
-  if (!user) throw new UnauthorizedException();
-  return { userId: payload.sub, email: payload.email, role: payload.role };
-}
-```
+inject `UsersService` เข้า `JwtStrategy` แล้วให้ `validate()` query DB ทุกครั้ง ถ้า user ถูกลบออกไปแล้ว token เดิมจะใช้งานไม่ได้ทันที → `401 Unauthorized`
 
 ---
 
@@ -210,7 +186,7 @@ api.mydaihub.com   → backend
 | Privilege escalation via register | ✅ แก้แล้ว |
 | JWT Secret fallback | ✅ แก้แล้ว |
 | SSL DB rejectUnauthorized | ✅ แก้แล้ว (ต้องตั้ง `SUPABASE_SSL_CERT` ใน Railway) |
-| Rate limiting | ❌ ยังไม่มี |
-| Helmet headers | ❌ ยังไม่มี |
-| JWT validates user exists in DB | ❌ ยังไม่มี |
+| Rate limiting | ✅ แก้แล้ว |
+| Helmet headers | ✅ แก้แล้ว |
+| JWT validates user exists in DB | ✅ แก้แล้ว |
 
