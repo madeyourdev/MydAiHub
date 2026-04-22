@@ -3,7 +3,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   preview: {
-    allowedHosts: 'all',
+    allowedHosts: true,
   },
   build: {
     rollupOptions: {
