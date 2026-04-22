@@ -203,3 +203,112 @@ Authorization: Bearer <access_token>
 
 **Errors**
 - `401` — Unauthorized
+
+---
+
+## Admin
+
+> ทุก endpoint ในหมวดนี้ต้องการ role `ADMIN` — ถ้าไม่ใช่จะได้ `403 Forbidden`
+
+### GET /admin/users
+ดึงรายชื่อ user ทั้งหมดในระบบ
+
+**Auth** — cookie หรือ Bearer token (ADMIN เท่านั้น)
+
+**Response 200**
+```json
+[
+  {
+    "id": "uuid",
+    "username": "string",
+    "email": "string",
+    "role": "USER | ADMIN",
+    "status": "ACTIVE | DELETED",
+    "credits": 0,
+    "aiModel": "claude-sonnet-4-6",
+    "createdAt": "ISO8601",
+    "lastLoginAt": "ISO8601 | null"
+  }
+]
+```
+
+**Errors**
+- `401` — Unauthorized
+- `403` — Forbidden (ไม่ใช่ ADMIN)
+
+---
+
+### PATCH /admin/users/:id
+แก้ไขข้อมูล user — credits, role, aiModel, status
+
+**Auth** — cookie หรือ Bearer token (ADMIN เท่านั้น)
+
+**Request Body** (ส่งเฉพาะ field ที่ต้องการแก้)
+```json
+{
+  "credits": 500,
+  "role": "USER | ADMIN",
+  "aiModel": "claude-haiku-4-5 | claude-sonnet-4-6 | claude-opus-4-7",
+  "status": "ACTIVE | DELETED"
+}
+```
+
+**Response 200**
+```json
+{
+  "id": "uuid",
+  "username": "string",
+  "email": "string",
+  "role": "USER | ADMIN",
+  "status": "ACTIVE | DELETED",
+  "credits": 500,
+  "aiModel": "claude-sonnet-4-6",
+  "createdAt": "ISO8601",
+  "lastLoginAt": "ISO8601 | null"
+}
+```
+
+**Errors**
+- `400` — aiModel ไม่ถูกต้อง
+- `401` — Unauthorized
+- `403` — Forbidden (ไม่ใช่ ADMIN)
+- `404` — User not found
+
+---
+
+## Chat
+
+> ทุก endpoint ในหมวดนี้ต้อง login ก่อน (JWT cookie)
+
+### POST /chat/message
+ส่งข้อความหา AI และหัก credits อัตโนมัติ
+
+**หลักการหัก credits**
+- Backend เป็นผู้จัดการทั้งหมด — frontend ปรับตัวเลขเองไม่ได้
+- ตรวจยอด credits ก่อนเรียก AI ทุกครั้ง
+- หัก **1 credit ต่อ 1 message** (ปรับได้ที่ `CREDIT_COST` ใน `src/chat/chat.service.ts`)
+- ถ้า credits ไม่พอ → ส่ง error กลับ ไม่เรียก AI
+
+**Auth** — ส่งผ่าน cookie อัตโนมัติ
+
+**Request Body**
+```json
+{
+  "message": "string (required)",
+  "model": "claude-haiku-4-5-20251001 | claude-sonnet-4-6 | claude-opus-4-7 (optional, default: claude-sonnet-4-6)"
+}
+```
+
+**Response 200**
+```json
+{
+  "reply": "string (คำตอบจาก AI)",
+  "credits": 99
+}
+```
+
+**Errors**
+- `400` — Message cannot be empty
+- `400` — Insufficient credits
+- `401` — Unauthorized
+- `500` — Failed to get response from AI (Anthropic API error)

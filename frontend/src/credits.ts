@@ -54,6 +54,8 @@ async function loadUser() {
 
   const roleBadge = document.getElementById('userRole')!;
   roleBadge.className = `user-role role-${user.role.toLowerCase()}`;
+
+  initSidebar('credits', user.role);
 }
 
 function renderPackages() {
@@ -91,7 +93,6 @@ function showToast(msg: string) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  initSidebar('credits');
   loadUser();
   renderPackages();
 

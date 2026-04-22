@@ -13,6 +13,7 @@ export default defineConfig({
         dashboard: resolve(__dirname, 'dashboard.html'),
         chat: resolve(__dirname, 'chat.html'),
         credits: resolve(__dirname, 'credits.html'),
+        admin: resolve(__dirname, 'admin.html'),
       },
     },
   },

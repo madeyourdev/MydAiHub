@@ -36,6 +36,8 @@ async function loadUser() {
 
   const roleBadge = document.getElementById('userRole')!;
   roleBadge.className = `user-role role-${user.role.toLowerCase()}`;
+
+  initSidebar('dashboard', user.role);
 }
 
 async function logout() {
@@ -47,7 +49,6 @@ async function logout() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  initSidebar('dashboard');
   loadUser();
   document.getElementById('logoutBtn')!.addEventListener('click', logout);
 });

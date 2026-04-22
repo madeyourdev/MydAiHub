@@ -102,7 +102,11 @@ AppModule
 ├── AuthModule         → POST /auth/register, POST /auth/login, POST /auth/google
 │   │                    POST /auth/logout, GET /auth/profile, GET /auth/admin-only
 │   └── imports UsersModule, PassportModule, JwtModule
-└── UsersModule        → GET /users/me; exports UsersService
+├── UsersModule        → GET /users/me; exports UsersService
+│   └── imports PrismaModule
+├── AdminModule        → GET /admin/users, PATCH /admin/users/:id (ADMIN only)
+│   └── imports PrismaModule
+└── ChatModule         → POST /chat/message
     └── imports PrismaModule
 ```
 
@@ -115,8 +119,11 @@ AppModule
 | Dashboard | `/dashboard.html` | `src/dashboard.ts` |
 | Chat | `/chat.html` | `src/chat.ts` |
 | Top-up Credits | `/credits.html` | `src/credits.ts` |
+| Admin Panel | `/admin.html` | `src/admin.ts` |
 
-Sidebar (`src/sidebar.ts`) ถูก import ในทุกหน้าหลัง login
+Sidebar (`src/sidebar.ts`) ถูก import ในทุกหน้าหลัง login — รับ `role` เป็น argument เพื่อ:
+- แสดง Admin Panel link เฉพาะ role `ADMIN`
+- ซ่อน Top-up Credits เฉพาะ role `ADMIN`
 
 ### Authentication flow
 
@@ -179,4 +186,18 @@ Group endpoints by module (Auth, Users, etc.) and by HTTP method within each gro
 | `FRONTEND_URL` | CORS allowed origin | defaults `http://localhost:5173` |
 | `GOOGLE_CLIENT_ID` | Google OAuth — `/auth/google` | |
 | `SUPABASE_SSL_CERT` | `PrismaService` — SSL cert (base64) | **required in production** |
+| `ANTHROPIC_API_KEY` | `ChatModule` — เรียก Claude API | **required** — app ไม่ขึ้นถ้าไม่มี |
 | `PORT` | `main.ts` | defaults `3000` |
+
+### Credit system
+
+Credits ถูกจัดการทั้งหมดฝั่ง **backend** — frontend ปรับตัวเลขเองไม่ได้
+
+| ขั้นตอน | รายละเอียด |
+|---|---|
+| ตรวจสอบ | ก่อนเรียก Anthropic API ทุกครั้ง — ถ้า `credits < CREDIT_COST` → ส่ง `400 Insufficient credits` |
+| หัก | หลัง AI ตอบกลับสำเร็จ — `UPDATE user SET credits = credits - CREDIT_COST` |
+| ค่า default | `CREDIT_COST = 1` ต่อ 1 message — แก้ได้ที่ `src/chat/chat.service.ts` |
+| เติม | ผ่าน Admin Panel (`PATCH /admin/users/:id`) เท่านั้น — ยังไม่มี payment gateway |
+
+Railway backend ต้องตั้ง `ANTHROPIC_API_KEY` ด้วย ไม่งั้น service จะไม่ขึ้น

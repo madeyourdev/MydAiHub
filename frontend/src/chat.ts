@@ -33,6 +33,8 @@ async function loadUser() {
 
   const roleBadge = document.getElementById('userRole')!;
   roleBadge.className = `user-role role-${user.role.toLowerCase()}`;
+
+  initSidebar('chat', user.role);
 }
 
 function renderMessage(msg: Message, isTemp = false) {
@@ -120,7 +122,6 @@ async function sendMessage() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  initSidebar('chat');
   loadUser();
 
   const input = document.getElementById('chatInput') as HTMLTextAreaElement;

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MydAIHub - Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+  </style>
+</head>
+
+<body class="app-body">
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <span class="brand-icon">✦</span>
+      <span class="brand-name">MydAIHub</span>
+    </div>
+    <div class="navbar-user">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">—</div>
+        <div class="user-details">
+          <span class="user-name" id="userName">Loading...</span>
+          <span class="user-role" id="userRole">—</span>
+        </div>
+      </div>
+      <div class="credits-badge">
+        <span class="credits-icon">◈</span>
+        <span id="creditsCount">—</span>
+        <span class="credits-label">credits</span>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <span class="sidebar-label">Menu</span>
+    <a href="/dashboard.html" class="sidebar-item" data-page="dashboard">
+      <span class="sidebar-icon">⊞</span>
+      Dashboard
+    </a>
+    <a href="/chat.html" class="sidebar-item" data-page="chat">
+      <span class="sidebar-icon">◎</span>
+      Chat
+    </a>
+    <div class="sidebar-divider"></div>
+    <span class="sidebar-label">Account</span>
+    <a href="/credits.html" class="sidebar-item" data-page="credits">
+      <span class="sidebar-icon">◈</span>
+      Top-up Credits
+    </a>
+  </aside>
+
+  <!-- Main -->
+  <main class="page-main">
+    <div class="admin-header">
+      <div>
+        <h1>Admin Panel</h1>
+        <p>จัดการผู้ใช้งานทั้งหมดในระบบ</p>
+      </div>
+      <div class="admin-stats" id="adminStats">
+        <div class="admin-stat-item">
+          <span class="admin-stat-value" id="totalUsers">—</span>
+          <span class="admin-stat-label">Total Users</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value" id="activeUsers">—</span>
+          <span class="admin-stat-label">Active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="table-toolbar">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search username or email..." />
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Role</th>
+            <th>Credits</th>
+            <th>AI Model</th>
+            <th>Status</th>
+            <th>Last Login</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <tr>
+            <td colspan="7" class="table-loading">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay hidden" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">Edit User</h3>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editUserId" />
+
+        <div class="form-group">
+          <label>Username</label>
+          <div class="form-static" id="editUsername">—</div>
+        </div>
+
+        <div class="form-group">
+          <label>Email</label>
+          <div class="form-static" id="editEmail">—</div>
+        </div>
+
+        <div class="form-group">
+          <label>Credits</label>
+          <input type="number" id="editCredits" class="form-input" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label>Role</label>
+          <select id="editRole" class="form-select">
+            <option value="USER">USER</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>AI Model</label>
+          <select id="editAiModel" class="form-select">
+            <option value="claude-haiku-4-5">Claude Haiku 4.5 — เร็ว ประหยัด</option>
+            <option value="claude-sonnet-4-6">Claude Sonnet 4.6 — สมดุล</option>
+            <option value="claude-opus-4-7">Claude Opus 4.7 — ทรงพลัง</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          <select id="editStatus" class="form-select">
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="DELETED">DELETED</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="btnCancel">Cancel</button>
+        <button class="btn-save" id="btnSave">Save Changes</button>
+      </div>
+      <div id="modalMessage" class="modal-message hidden"></div>
+    </div>
+  </div>
+
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <script type="module" src="/src/admin.ts"></script>
+</body>
+
+</html>
