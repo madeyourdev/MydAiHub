@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MydAIHub - Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>body { opacity: 0; transition: opacity 0.15s ease; }</style>
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="glass-card">
+        <div class="card-header">
+          <h1>Welcome Back</h1>
+          <p>Sign in to access your MydAIHub workspace</p>
+        </div>
+        <form id="loginForm">
+          <div class="input-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="Enter your username" />
+          </div>
+          <div class="input-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter your password" />
+          </div>
+          <button type="submit" class="submit-btn" id="submitBtn">
+            <span>Login to System</span>
+            <div class="loader"></div>
+          </button>
+        </form>
+
+        <div class="divider">
+          <span>or</span>
+        </div>
+
+        <div id="google-btn-container"></div>
+
+        <div id="message" class="message hidden"></div>
+
+        <p class="switch-link">Don't have an account? <a href="/register.html">Sign up</a></p>
+      </div>
+    </div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

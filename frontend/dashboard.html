@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MydAIHub - Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body { opacity: 0; transition: opacity 0.15s ease; }</style>
+  </head>
+  <body class="app-body">
+
+    <!-- Navbar -->
+    <nav class="navbar">
+      <div class="navbar-brand">
+        <span class="brand-icon">✦</span>
+        <span class="brand-name">MydAIHub</span>
+      </div>
+      <div class="navbar-user" id="navbarUser">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">—</div>
+          <div class="user-details">
+            <span class="user-name" id="userName">Loading...</span>
+            <span class="user-role" id="userRole">—</span>
+          </div>
+        </div>
+        <div class="credits-badge" id="creditsDisplay">
+          <span class="credits-icon">◈</span>
+          <span id="creditsCount">—</span>
+          <span class="credits-label">credits</span>
+        </div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+      </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <span class="sidebar-label">Menu</span>
+      <a href="/dashboard.html" class="sidebar-item" data-page="dashboard">
+        <span class="sidebar-icon">⊞</span>
+        Dashboard
+      </a>
+      <a href="/chat.html" class="sidebar-item" data-page="chat">
+        <span class="sidebar-icon">◎</span>
+        Chat
+      </a>
+      <div class="sidebar-divider"></div>
+      <span class="sidebar-label">Account</span>
+      <a href="/credits.html" class="sidebar-item" data-page="credits">
+        <span class="sidebar-icon">◈</span>
+        Top-up Credits
+      </a>
+    </aside>
+
+    <!-- Main content -->
+    <main class="page-main">
+      <div class="welcome-section">
+        <h1>Welcome back, <span id="welcomeName">—</span> 👋</h1>
+        <p>Here's your workspace overview</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">◈</div>
+          <div class="stat-info">
+            <span class="stat-value" id="statCredits">—</span>
+            <span class="stat-label">Credits</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⬡</div>
+          <div class="stat-info">
+            <span class="stat-value" id="statRole">—</span>
+            <span class="stat-label">Role</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">◷</div>
+          <div class="stat-info">
+            <span class="stat-value" id="statLastLogin">—</span>
+            <span class="stat-label">Last Login</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <h2 class="section-title">Quick Actions</h2>
+        <div class="action-grid">
+          <a href="/chat.html" class="action-card">
+            <div class="action-icon">◎</div>
+            <div class="action-info">
+              <span class="action-name">Start Chat</span>
+              <span class="action-desc">Chat with AI models</span>
+            </div>
+            <span class="action-arrow">→</span>
+          </a>
+          <a href="/credits.html" class="action-card">
+            <div class="action-icon">◈</div>
+            <div class="action-info">
+              <span class="action-name">Top-up Credits</span>
+              <span class="action-desc">Add more credits to your account</span>
+            </div>
+            <span class="action-arrow">→</span>
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <script type="module" src="/src/dashboard.ts"></script>
+  </body>
+</html>

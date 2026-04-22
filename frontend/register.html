@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MydAIHub - Register</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body { opacity: 0; transition: opacity 0.15s ease; }</style>
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="glass-card">
+        <div class="card-header">
+          <h1>Create Account</h1>
+          <p>Join MydAIHub and start your AI journey</p>
+        </div>
+        <form id="registerForm">
+          <div class="input-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="Choose a username" required />
+          </div>
+          <div class="input-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="Enter your email" required />
+          </div>
+          <div class="input-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="At least 6 characters" required />
+          </div>
+          <div class="input-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input type="password" id="confirmPassword" placeholder="Repeat your password" required />
+          </div>
+          <button type="submit" class="submit-btn" id="submitBtn">
+            <span>Create Account</span>
+            <div class="loader"></div>
+          </button>
+        </form>
+
+        <div id="message" class="message hidden"></div>
+
+        <p class="switch-link">Already have an account? <a href="/">Sign in</a></p>
+      </div>
+    </div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <script type="module" src="/src/register.ts"></script>
+  </body>
+</html>

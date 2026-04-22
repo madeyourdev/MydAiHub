@@ -6,8 +6,9 @@
 # ── Dependencies ──
 node_modules/
 
-# ── Frontend (test only, not included in repo) ──
-frontend/
+# ── Frontend ──
+frontend/node_modules/
+frontend/dist/
 
 # ── Environment variables ──
 .env

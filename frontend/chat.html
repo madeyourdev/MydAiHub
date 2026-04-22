@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MydAIHub - Chat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body { opacity: 0; transition: opacity 0.15s ease; }</style>
+  </head>
+  <body class="app-body">
+
+    <!-- Navbar -->
+    <nav class="navbar">
+      <div class="navbar-brand">
+        <span class="brand-icon">✦</span>
+        <span class="brand-name">MydAIHub</span>
+      </div>
+      <div class="navbar-user">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">—</div>
+          <div class="user-details">
+            <span class="user-name" id="userName">Loading...</span>
+            <span class="user-role" id="userRole">—</span>
+          </div>
+        </div>
+        <div class="credits-badge">
+          <span class="credits-icon">◈</span>
+          <span id="creditsCount">—</span>
+          <span class="credits-label">credits</span>
+        </div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+      </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <span class="sidebar-label">Menu</span>
+      <a href="/dashboard.html" class="sidebar-item" data-page="dashboard">
+        <span class="sidebar-icon">⊞</span>
+        Dashboard
+      </a>
+      <a href="/chat.html" class="sidebar-item" data-page="chat">
+        <span class="sidebar-icon">◎</span>
+        Chat
+      </a>
+      <div class="sidebar-divider"></div>
+      <span class="sidebar-label">Account</span>
+      <a href="/credits.html" class="sidebar-item" data-page="credits">
+        <span class="sidebar-icon">◈</span>
+        Top-up Credits
+      </a>
+    </aside>
+
+    <!-- Chat layout -->
+    <main class="chat-layout">
+      <!-- Conversation list -->
+      <aside class="conv-list">
+        <div class="conv-list-header">
+          <span>Conversations</span>
+          <button class="new-chat-btn" id="newChatBtn">＋ New</button>
+        </div>
+        <div class="conv-items" id="convItems">
+          <div class="conv-item active" data-id="1">
+            <span class="conv-icon">◎</span>
+            <div class="conv-meta">
+              <span class="conv-name">New conversation</span>
+              <span class="conv-preview">Start chatting...</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Chat window -->
+      <section class="chat-window">
+        <div class="chat-header">
+          <span class="chat-title" id="chatTitle">New conversation</span>
+          <div class="model-selector">
+            <span class="model-label">Model</span>
+            <select id="modelSelect" class="model-select">
+              <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+              <option value="claude-opus-4-7">Claude Opus 4.7</option>
+              <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="messages-area" id="messagesArea">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">◎</div>
+            <h3>Start a conversation</h3>
+            <p>Ask anything — MydAIHub AI is ready to help</p>
+          </div>
+        </div>
+
+        <div class="chat-input-area">
+          <div class="input-row">
+            <textarea
+              id="chatInput"
+              class="chat-textarea"
+              placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
+              rows="1"
+            ></textarea>
+            <button class="send-btn" id="sendBtn">
+              <span class="send-icon">➤</span>
+            </button>
+          </div>
+          <div class="input-footer">
+            <span class="cost-info" id="costInfo">Each message uses credits based on tokens</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <script type="module" src="/src/chat.ts"></script>
+  </body>
+</html>

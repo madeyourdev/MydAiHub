@@ -1,0 +1,269 @@
+/* ── Credits page ── */
+.credits-header {
+  margin-bottom: 32px;
+}
+
+.credits-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 6px;
+}
+
+.credits-header p {
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* ── Balance card ── */
+.balance-card {
+  background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(20,184,166,0.06));
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 16px;
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 40px;
+}
+
+.balance-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.balance-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #10b981;
+}
+
+.balance-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.balance-icon {
+  font-size: 22px;
+  color: #10b981;
+}
+
+#balanceCredits {
+  font-size: 36px;
+  font-weight: 700;
+  color: #f0fdf4;
+}
+
+.balance-unit {
+  font-size: 16px;
+  color: #34d399;
+  font-weight: 500;
+}
+
+.use-credits-btn {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.use-credits-btn:hover {
+  background: rgba(16, 185, 129, 0.25);
+}
+
+/* ── Packages ── */
+.packages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.pkg-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  text-align: center;
+}
+
+.pkg-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(99, 102, 241, 0.35);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.pkg-card.popular {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.pkg-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #6366f1;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.pkg-icon {
+  font-size: 28px;
+  color: #6366f1;
+}
+
+.pkg-credits {
+  font-size: 28px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.pkg-credits span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  margin-left: 4px;
+}
+
+.pkg-desc {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.pkg-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: #a5b4fc;
+}
+
+.pkg-price small {
+  font-size: 12px;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.pkg-buy-btn {
+  width: 100%;
+  background: #6366f1;
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 4px;
+}
+
+.pkg-buy-btn:hover {
+  background: #4f46e5;
+}
+
+/* ── History ── */
+.history-card {
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.history-empty {
+  padding: 40px;
+  text-align: center;
+  color: #334155;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 28px;
+}
+
+.history-empty p {
+  font-size: 14px;
+  color: #475569;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 13px;
+}
+
+.history-row:last-child {
+  border-bottom: none;
+}
+
+.history-date {
+  color: #475569;
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.history-desc {
+  flex: 1;
+  color: #94a3b8;
+}
+
+.history-amount {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.history-amount.positive {
+  color: #10b981;
+}
+
+.history-amount.negative {
+  color: #f87171;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 41, 59, 0.95);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  color: #a5b4fc;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 10px;
+  backdrop-filter: blur(12px);
+  z-index: 999;
+  animation: fadeInMsg 0.3s ease;
+}
+
+.toast.hidden {
+  display: none;
+}
