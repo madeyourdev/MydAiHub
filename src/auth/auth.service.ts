@@ -69,10 +69,11 @@ export class AuthService {
 
   getCookieOptions(): CookieOptions {
     const days = parseInt(process.env.COOKIE_EXPIRES_DAYS || '1');
+    const isProduction = process.env.NODE_ENV === 'production';
     return {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: days * 24 * 60 * 60 * 1000,
     };
   }
