@@ -31,20 +31,42 @@ npx prisma studio                                # GUI for database
 ```bash
 cd frontend && npm run dev      # Vite dev server
 cd frontend && npm run build    # production build
+cd frontend && npm run start    # serve built files (ใช้ใน Railway)
 ```
 
 ## Deployment: Railway
 
-Deploy ผ่าน Railway โดย connect GitHub repo แล้วตั้งค่า environment variables
+Monorepo deploy บน Railway เป็น 2 service แยกกันจาก repo เดียวกัน
 
-**ขั้นตอน:**
-1. Push code ขึ้น GitHub
-2. สร้าง project ใหม่ใน Railway → Deploy from GitHub repo
-3. ตั้ง environment variables ทุกตัวใน Railway Dashboard → Variables (ดูจาก `.env.example`)
-4. ตั้ง `NODE_ENV=production`
-5. ตั้ง `FRONTEND_URL` เป็น URL ของ frontend จริง
-6. Railway จะ build อัตโนมัติด้วย `npm run build` (รัน `prisma generate && nest build`)
-7. Start ด้วย `npm run start:prod`
+### Backend Service
+- Root Directory: ว่าง (root)
+- Build: `npm run build`
+- Start: `npm run start:prod`
+
+**Environment variables ที่ต้องตั้ง:**
+| Variable | หมายเหตุ |
+|---|---|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Supabase Transaction Pooler port 6543 |
+| `DIRECT_URL` | Supabase Session Pooler port 5432 |
+| `JWT_SECRET` | random string ยาวๆ — **app ไม่ขึ้นถ้าไม่มี** |
+| `JWT_EXPIRES_IN` | เช่น `7d` |
+| `COOKIE_EXPIRES_DAYS` | เช่น `7` |
+| `FRONTEND_URL` | URL ของ frontend service บน Railway |
+| `GOOGLE_CLIENT_ID` | จาก Google Cloud Console |
+| `SUPABASE_SSL_CERT` | base64 ของ Supabase CA cert — **app ไม่ขึ้นถ้าไม่มีใน production** |
+| `PORT` | Railway ตั้งให้อัตโนมัติ |
+
+### Frontend Service
+- Root Directory: `frontend`
+- Build: `npm run build`
+- Start: `npm run start`
+
+**Environment variables ที่ต้องตั้ง (ต้องตั้งก่อน build):**
+| Variable | หมายเหตุ |
+|---|---|
+| `VITE_API_URL` | URL ของ backend service บน Railway |
+| `VITE_GOOGLE_CLIENT_ID` | จาก Google Cloud Console |
 
 **Health check:** `GET /health` — Railway ใช้ตรวจสอบว่า app พร้อมใช้งาน
 
@@ -67,9 +89,10 @@ DIRECT_URL="postgresql://postgres.[REF]:[PASSWORD]@aws-1-ap-southeast-1.pooler.s
 
 ## Architecture
 
-This is a monorepo with two independent apps:
+This is a monorepo with two independent apps deployed on Railway:
 
-**`/` (Backend)** — NestJS 11 API server on port 3000  
+**`/` (Backend)** — NestJS 11 API server on port 3000
+**`/frontend`** — Vite MPA (Multi-Page App) — static site served via `vite preview`
 
 ### Backend module graph
 
@@ -79,9 +102,21 @@ AppModule
 ├── AuthModule         → POST /auth/register, POST /auth/login, POST /auth/google
 │   │                    POST /auth/logout, GET /auth/profile, GET /auth/admin-only
 │   └── imports UsersModule, PassportModule, JwtModule
-└── UsersModule        → no routes yet; exports UsersService
+└── UsersModule        → GET /users/me; exports UsersService
     └── imports PrismaModule
 ```
+
+### Frontend pages
+
+| หน้า | URL | ไฟล์ |
+|---|---|---|
+| Login | `/` | `index.html` + `src/main.ts` |
+| Register | `/register.html` | `src/register.ts` |
+| Dashboard | `/dashboard.html` | `src/dashboard.ts` |
+| Chat | `/chat.html` | `src/chat.ts` |
+| Top-up Credits | `/credits.html` | `src/credits.ts` |
+
+Sidebar (`src/sidebar.ts`) ถูก import ในทุกหน้าหลัง login
 
 ### Authentication flow
 
@@ -98,8 +133,10 @@ AppModule
 |---|---|---|
 | `httpOnly` | `true` | JS อ่านไม่ได้ ป้องกัน XSS |
 | `secure` | `true` ใน production | ส่งผ่าน HTTPS เท่านั้น |
-| `sameSite` | `lax` | ป้องกัน CSRF |
+| `sameSite` | `none` ใน production, `lax` ใน dev | frontend/backend คนละ domain — ต้อง `none` เพื่อส่ง cookie ข้าม domain ได้ |
 | `maxAge` | `COOKIE_EXPIRES_DAYS` × 86400000 ms | กำหนดได้ใน `.env` |
+
+> **หมายเหตุ:** `sameSite: none` ใช้ชั่วคราวจนกว่าจะมี custom domain ที่ frontend/backend อยู่ subdomain เดียวกัน ดูแผนใน `docs/future-features.md`
 
 Frontend ทุก fetch ต้องใส่ `credentials: 'include'` เพื่อให้ browser ส่ง cookie ไปด้วย
 
@@ -132,13 +169,14 @@ Group endpoints by module (Auth, Users, etc.) and by HTTP method within each gro
 
 ### Environment variables
 
-| Variable | Used by |
-|---|---|
-| `DATABASE_URL` | `PrismaService` — runtime queries via pg adapter (Transaction Pooler port 6543) |
-| `DIRECT_URL` | `prisma.config.ts` — Prisma CLI migrations (Session Pooler port 5432) |
-| `JWT_SECRET` | `AuthModule` + `JwtStrategy` — JWT signing/verification |
-| `JWT_EXPIRES_IN` | JWT token expiry (e.g. `1d`, `7d`) — defaults to `1d` |
-| `COOKIE_EXPIRES_DAYS` | httpOnly cookie max age in days — defaults to `1` |
-| `FRONTEND_URL` | CORS allowed origin — defaults to `http://localhost:5173` |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID for `/auth/google` |
-| `PORT` | `main.ts` — defaults to 3000 |
+| Variable | Used by | หมายเหตุ |
+|---|---|---|
+| `DATABASE_URL` | `PrismaService` — runtime queries (Transaction Pooler port 6543) | |
+| `DIRECT_URL` | `prisma.config.ts` — Prisma CLI migrations (Session Pooler port 5432) | |
+| `JWT_SECRET` | `AuthModule` + `JwtStrategy` | **required** — app ไม่ขึ้นถ้าไม่มี |
+| `JWT_EXPIRES_IN` | JWT token expiry | defaults `1d` |
+| `COOKIE_EXPIRES_DAYS` | httpOnly cookie max age in days | defaults `1` |
+| `FRONTEND_URL` | CORS allowed origin | defaults `http://localhost:5173` |
+| `GOOGLE_CLIENT_ID` | Google OAuth — `/auth/google` | |
+| `SUPABASE_SSL_CERT` | `PrismaService` — SSL cert (base64) | **required in production** |
+| `PORT` | `main.ts` | defaults `3000` |

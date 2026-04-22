@@ -73,7 +73,7 @@ export class AuthService {
     return {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      sameSite: isProduction ? 'none' as const : 'lax' as const,
       maxAge: days * 24 * 60 * 60 * 1000,
     };
   }

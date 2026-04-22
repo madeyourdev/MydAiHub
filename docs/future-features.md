@@ -185,10 +185,16 @@ app.useGlobalPipes(new ValidationPipe({
 
 ปัจจุบัน `MinLength(6)` ควรเป็น `MinLength(8)` และอาจเพิ่ม pattern validation
 
-#### 9. `sameSite: 'strict'` สำหรับ cookie
+#### 9. ~~`sameSite` cookie~~ — ใช้ `none` ชั่วคราว รอ custom domain
 **ไฟล์:** `src/auth/auth.service.ts` — `getCookieOptions()`
 
-ถ้า frontend กับ backend อยู่คนละ domain ควรใช้ `'strict'` เพื่อป้องกัน CSRF ดีกว่า `'lax'`
+ตอนนี้ frontend (`frontend-production-640a.up.railway.app`) และ backend (`mydaihub-production.up.railway.app`) อยู่คนละ domain กัน ทำให้ต้องใช้ `SameSite: none` เพื่อให้ browser ส่ง cookie ข้าม domain ได้ ซึ่งลด CSRF protection ลง แต่ยังมี CORS guard ช่วยอยู่
+
+**แผนระยะยาว:** เมื่อมี custom domain ให้ย้ายมาใช้ subdomain เดียวกัน แล้วเปลี่ยนกลับเป็น `SameSite: lax`
+```
+app.mydaihub.com   → frontend
+api.mydaihub.com   → backend
+```
 
 ---
 
