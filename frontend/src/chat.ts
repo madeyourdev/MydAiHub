@@ -224,7 +224,7 @@ async function sendMessage() {
 
     const convRes = await fetch(`${API_URL}/chat/conversations`, { credentials: 'include' });
     if (convRes.ok) renderConvList(await convRes.json());
-    setActiveConvItem(currentConversationId);
+    setActiveConvItem(data.conversationId);
 
   } catch {
     document.getElementById('tempMsg')?.remove();
