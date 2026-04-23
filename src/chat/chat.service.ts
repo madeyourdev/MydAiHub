@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   ForbiddenException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,6 +23,7 @@ const client = new OpenAI({
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
   constructor(private prisma: PrismaService) {}
 
   async sendMessage(
@@ -145,6 +147,6 @@ export class ChatService {
     const { count } = await this.prisma.conversation.deleteMany({
       where: { updatedAt: { lt: cutoff } },
     });
-    if (count > 0) console.log(`[ChatService] Deleted ${count} conversations inactive > 7 days`);
+    if (count > 0) this.logger.log(`Deleted ${count} conversations inactive > 7 days`);
   }
 }

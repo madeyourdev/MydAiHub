@@ -1,7 +1,7 @@
-import { IsOptional, IsInt, Min, IsEnum, IsString } from 'class-validator';
+import { IsOptional, IsInt, Min, IsEnum, IsIn } from 'class-validator';
 import { Role, UserStatus } from '@prisma/client';
 
-const AI_MODELS = [
+export const AI_MODELS = [
   'llama-3.3-70b-versatile',
   'llama-3.1-70b-versatile',
   'llama-3.1-8b-instant',
@@ -27,12 +27,6 @@ export class UpdateUserDto {
   status?: UserStatus;
 
   @IsOptional()
-  @IsString()
+  @IsIn(AI_MODELS, { message: `aiModel must be one of: ${AI_MODELS.join(', ')}` })
   aiModel?: string;
-
-  validate() {
-    if (this.aiModel && !AI_MODELS.includes(this.aiModel)) {
-      throw new Error(`aiModel must be one of: ${AI_MODELS.join(', ')}`);
-    }
-  }
 }

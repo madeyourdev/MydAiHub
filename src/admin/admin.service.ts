@@ -1,17 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
-
-const AI_MODELS = [
-  'llama-3.3-70b-versatile',
-  'llama-3.1-70b-versatile',
-  'llama-3.1-8b-instant',
-  'llama3-70b-8192',
-  'llama3-8b-8192',
-  'gemma2-9b-it',
-  'gemma-7b-it',
-  'mixtral-8x7b-32768',
-];
 
 @Injectable()
 export class AdminService {
@@ -37,10 +26,6 @@ export class AdminService {
   async updateUser(id: string, dto: UpdateUserDto) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
-
-    if (dto.aiModel && !AI_MODELS.includes(dto.aiModel)) {
-      throw new BadRequestException(`aiModel must be one of: ${AI_MODELS.join(', ')}`);
-    }
 
     return this.prisma.user.update({
       where: { id },
