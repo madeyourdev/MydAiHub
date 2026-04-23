@@ -75,20 +75,12 @@ function renderConvList(convs: ConversationSummary[]) {
           <span class="conv-name">${escapeHtml(title)}</span>
           <span class="conv-preview">${escapeHtml(preview.slice(0, 40))}${preview.length > 40 ? '…' : ''}</span>
         </div>
-        <button class="conv-delete" data-id="${c.id}" title="Delete">✕</button>
       </div>
     `;
   }).join('');
 
   container.querySelectorAll<HTMLElement>('.conv-item').forEach(el => {
-    el.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).classList.contains('conv-delete')) return;
-      selectConversation(el.dataset.id!);
-    });
-  });
-
-  container.querySelectorAll<HTMLButtonElement>('.conv-delete').forEach(btn => {
-    btn.addEventListener('click', () => deleteConversation(btn.dataset.id!));
+    el.addEventListener('click', () => selectConversation(el.dataset.id!));
   });
 }
 
@@ -119,19 +111,6 @@ async function selectConversation(id: string) {
 
   const convItem = document.querySelector<HTMLElement>(`.conv-item[data-id="${id}"] .conv-name`);
   document.getElementById('chatTitle')!.textContent = convItem?.textContent ?? 'Conversation';
-}
-
-async function deleteConversation(id: string) {
-  await fetch(`${API_URL}/chat/conversations/${id}`, { method: 'DELETE', credentials: 'include' });
-
-  if (currentConversationId === id) {
-    currentConversationId = null;
-    showEmptyState();
-    document.getElementById('chatTitle')!.textContent = 'New conversation';
-  }
-
-  const res = await fetch(`${API_URL}/chat/conversations`, { credentials: 'include' });
-  if (res.ok) renderConvList(await res.json());
 }
 
 // ─── Messages ────────────────────────────────────────────────────────────────

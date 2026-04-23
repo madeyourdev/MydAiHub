@@ -72,7 +72,7 @@ function renderTable(users: User[]) {
       </td>
       <td><span class="badge badge-${u.role.toLowerCase()}">${u.role}</span></td>
       <td><span class="credits-cell">◈ ${u.credits.toLocaleString()}</span></td>
-      <td><span class="model-cell">${u.aiModel}</span></td>
+      <td><span class="model-cell">${escHtml(u.aiModel)}</span></td>
       <td><span class="badge badge-${u.status.toLowerCase()}">${u.status}</span></td>
       <td>${u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString('th-TH') : '—'}</td>
       <td><button class="btn-edit" data-id="${u.id}">Edit</button></td>

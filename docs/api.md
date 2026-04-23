@@ -27,10 +27,9 @@ Base URL (production): Railway URL จาก dashboard
 **Request Body**
 ```json
 {
-  "username": "string",
+  "username": "string (3–30 chars, a-z A-Z 0-9 _ - เท่านั้น)",
   "email": "string (email format)",
-  "password": "string (min 6 chars)",
-  "role": "USER | ADMIN (optional, default: USER)"
+  "password": "string (min 8 chars)"
 }
 ```
 
@@ -225,7 +224,7 @@ Authorization: Bearer <access_token>
     "role": "USER | ADMIN",
     "status": "ACTIVE | DELETED",
     "credits": 0,
-    "aiModel": "claude-sonnet-4-6",
+    "aiModel": "llama-3.3-70b-versatile",
     "createdAt": "ISO8601",
     "lastLoginAt": "ISO8601 | null"
   }
@@ -248,7 +247,7 @@ Authorization: Bearer <access_token>
 {
   "credits": 500,
   "role": "USER | ADMIN",
-  "aiModel": "claude-haiku-4-5 | claude-sonnet-4-6 | claude-opus-4-7",
+  "aiModel": "llama-3.3-70b-versatile | llama-3.1-70b-versatile | llama-3.1-8b-instant | llama3-70b-8192 | llama3-8b-8192 | gemma2-9b-it | gemma-7b-it | mixtral-8x7b-32768",
   "status": "ACTIVE | DELETED"
 }
 ```
@@ -262,14 +261,14 @@ Authorization: Bearer <access_token>
   "role": "USER | ADMIN",
   "status": "ACTIVE | DELETED",
   "credits": 500,
-  "aiModel": "claude-sonnet-4-6",
+  "aiModel": "llama-3.3-70b-versatile",
   "createdAt": "ISO8601",
   "lastLoginAt": "ISO8601 | null"
 }
 ```
 
 **Errors**
-- `400` — aiModel ไม่ถูกต้อง
+- `400` — aiModel ไม่อยู่ใน whitelist
 - `401` — Unauthorized
 - `403` — Forbidden (ไม่ใช่ ADMIN)
 - `404` — User not found
@@ -294,8 +293,8 @@ Authorization: Bearer <access_token>
 **Request Body**
 ```json
 {
-  "message": "string (required)",
-  "model": "llama-3.3-70b-versatile | llama-3.1-8b-instant | gemma2-9b-it (optional, default: llama-3.3-70b-versatile)",
+  "message": "string (required, max 4000 chars)",
+  "model": "llama-3.3-70b-versatile | llama-3.1-70b-versatile | llama-3.1-8b-instant | llama3-70b-8192 | llama3-8b-8192 | gemma2-9b-it | gemma-7b-it | mixtral-8x7b-32768 (optional, default: llama-3.3-70b-versatile)",
   "conversationId": "uuid (optional — ถ้าไม่ส่งจะสร้าง conversation ใหม่)"
 }
 ```

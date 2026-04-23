@@ -174,6 +174,35 @@ api.mydaihub.com   → backend
 
 ---
 
+## Upcoming Business Features
+
+### 1. Payment Gateway Integration
+**ปัญหาปัจจุบัน:** การเติม Credits ทำได้แค่ให้ Admin กรอกให้แบบ Manual หน้าบ้านผ่าน Admin Panel (`PATCH /admin/users/:id`) 
+**แผนพัฒนา:** 
+- เชื่อมต่อ API ผู้ให้บริการชำระเงิน (Stripe Checkout สำหรับบัตรเครดิต หรือ PromptPay QR)
+- สร้างระบบ Webhook webhook-receiver: ทันทีที่ลูกค้าจ่ายเงินสำเร็จ ระบบจะเติม `credits` ลงตาราง User ให้อัตโนมัติ
+
+### 2. AI Provider Migration (Groq → OpenRouter)
+**ปัญหาปัจจุบัน:** ตอนนี้ระบบแชทใช้งานเฉพาะโมเดลบน Groq ผ่านคีย์ `GROQ_API_KEY` (เช่น Llama 3)
+**แผนพัฒนา:** 
+- ย้าย API endpoint ไปเป็น OpenRouter (ด้วยคีย์ `OPENROUTER_API_KEY`)
+- ลดความยุ่งยากเพราะ OpenRouter รองรับโมเดลแบบ OpenAI-compatible เหมือนที่ทำอยู่แล้ว แต่จะได้โมเดลดังๆ อย่าง ChatGPT (OpenAI), Claude (Anthropic), Gemini (Google) เข้ามาอยู่ในระบบเดียวกันครบถ้วน
+
+### 3. Dynamic AI Models Management
+**ปัญหาปัจจุบัน:** รายชื่อโมเดลตัวเลือก (Dropdown) ถูกฝังโค้ดติดตัวหนังสือไว้ (Hardcoded) ใน `frontend/admin.html`
+**แผนพัฒนา:**
+- สร้าง Database Schema แยกตารางเช่น `ModelProvider` เพื่อเก็บ (name, provider_slug, cost_per_credit, isOpen)
+- สร้าง API Endpoint `GET /models` ให้ Frontend ดึงมาแทน
+- แอดมินจัดการ ปิด-เปิด เพิ่มตัว AI ให้ลูกค้าได้เรียลไทม์ผ่านแดชบอร์ด โดยไม่ต้องแก้โค้ดชิ้นใดชิ้นหนึ่ง และ Deploy ใหม่
+
+### 4. User Status Management (Soft Delete / Ban)
+**ปัญหาปัจจุบัน:** ใน `schema.prisma` มีคอลัมน์ `status` (ACTIVE / DELETED) แล้ว แต่ยังขาด Front-End Management 
+**แผนพัฒนา:**
+- ใช้งานระบบ Soft-Delete เพื่อเก็บรักษา History ของข้อความและแชทไว้ตามหลัก Data Governance
+- เพิ่มเมนูใน Admin Panel เพื่อกด แบน(Ban) หรือ ปิดบัญชี ผู้ใช้ได้ด้วยคลิกเดียว
+
+---
+
 ### สรุปสถานะปัจจุบัน
 
 | หัวข้อ | สถานะ |

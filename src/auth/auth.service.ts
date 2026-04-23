@@ -44,27 +44,24 @@ export class AuthService {
   }
 
   async register(data: any) {
-    const existingUser = await this.usersService.findOneByUsername(data.username);
-    if (existingUser) {
-      throw new BadRequestException('Username already exists');
-    }
-
-    const existingEmail = await this.usersService.findOneByEmail(data.email);
-    if (existingEmail) {
-      throw new BadRequestException('Email already exists');
-    }
-
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(data.password, salt);
 
-    const newUser = await this.usersService.create({
-      username: data.username,
-      email: data.email,
-      password: hashedPassword,
-    });
-
-    const { password, ...result } = newUser;
-    return result;
+    try {
+      const newUser = await this.usersService.create({
+        username: data.username,
+        email: data.email,
+        password: hashedPassword,
+      });
+      const { password, ...result } = newUser;
+      return result;
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        const field = err?.meta?.target?.includes('email') ? 'Email' : 'Username';
+        throw new BadRequestException(`${field} already exists`);
+      }
+      throw err;
+    }
   }
 
   getCookieOptions(): CookieOptions {
