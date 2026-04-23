@@ -281,7 +281,7 @@ Authorization: Bearer <access_token>
 > ทุก endpoint ในหมวดนี้ต้อง login ก่อน (JWT cookie)
 
 ### POST /chat/message
-ส่งข้อความหา AI และหัก credits อัตโนมัติ
+ส่งข้อความหา AI และหัก credits อัตโนมัติ ถ้าไม่ส่ง `conversationId` จะสร้าง Conversation ใหม่อัตโนมัติ
 
 **หลักการหัก credits**
 - Backend เป็นผู้จัดการทั้งหมด — frontend ปรับตัวเลขเองไม่ได้
@@ -295,7 +295,8 @@ Authorization: Bearer <access_token>
 ```json
 {
   "message": "string (required)",
-  "model": "claude-haiku-4-5-20251001 | claude-sonnet-4-6 | claude-opus-4-7 (optional, default: claude-sonnet-4-6)"
+  "model": "llama-3.3-70b-versatile | llama-3.1-8b-instant | gemma2-9b-it (optional, default: llama-3.3-70b-versatile)",
+  "conversationId": "uuid (optional — ถ้าไม่ส่งจะสร้าง conversation ใหม่)"
 }
 ```
 
@@ -303,7 +304,8 @@ Authorization: Bearer <access_token>
 ```json
 {
   "reply": "string (คำตอบจาก AI)",
-  "credits": 99
+  "credits": 99,
+  "conversationId": "uuid"
 }
 ```
 
@@ -311,4 +313,71 @@ Authorization: Bearer <access_token>
 - `400` — Message cannot be empty
 - `400` — Insufficient credits
 - `401` — Unauthorized
-- `500` — Failed to get response from AI (Anthropic API error)
+- `404` — Conversation not found
+- `500` — Failed to get response from AI (Groq API error)
+
+---
+
+### GET /chat/conversations
+ดึงรายการ conversation ทั้งหมดของ user เรียงตาม updatedAt ล่าสุด
+
+**Auth** — cookie อัตโนมัติ
+
+**Response 200**
+```json
+[
+  {
+    "id": "uuid",
+    "title": "string | null",
+    "updatedAt": "ISO8601",
+    "messages": [
+      { "role": "assistant", "content": "string (last message preview)" }
+    ]
+  }
+]
+```
+
+**Errors**
+- `401` — Unauthorized
+
+---
+
+### GET /chat/conversations/:id/messages
+ดึง message ทั้งหมดในห้องสนทนา เรียงจากเก่าไปใหม่
+
+**Auth** — cookie อัตโนมัติ (ต้องเป็น owner ของ conversation)
+
+**Response 200**
+```json
+[
+  {
+    "id": "uuid",
+    "role": "user | assistant",
+    "content": "string",
+    "model": "string",
+    "createdAt": "ISO8601"
+  }
+]
+```
+
+**Errors**
+- `401` — Unauthorized
+- `403` — Forbidden (ไม่ใช่ owner)
+- `404` — Conversation not found
+
+---
+
+### DELETE /chat/conversations/:id
+ลบ conversation และ message ทั้งหมดในนั้น (cascade delete)
+
+**Auth** — cookie อัตโนมัติ (ต้องเป็น owner)
+
+**Response 200**
+```json
+{ "message": "Conversation deleted" }
+```
+
+**Errors**
+- `401` — Unauthorized
+- `403` — Forbidden (ไม่ใช่ owner)
+- `404` — Conversation not found

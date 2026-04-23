@@ -10,37 +10,145 @@ const API_URL = import.meta.env.VITE_API_URL;
 if (!API_URL) throw new Error('VITE_API_URL environment variable is required');
 
 interface Message {
-  role: 'user' | 'ai';
+  role: 'user' | 'assistant';
   content: string;
 }
 
-const messages: Message[] = [];
+interface ConversationSummary {
+  id: string;
+  title: string | null;
+  updatedAt: string;
+  messages: { content: string; role: string }[];
+}
+
+let currentConversationId: string | null = null;
 let isLoading = false;
+
+// ─── User ────────────────────────────────────────────────────────────────────
 
 async function loadUser() {
   const res = await fetch(`${API_URL}/users/me`, { credentials: 'include' });
-  if (res.status === 401) {
-    window.location.href = '/';
-    return;
-  }
+  if (res.status === 401) { window.location.href = '/'; return; }
   const user = await res.json();
 
-  const initial = user.username.charAt(0).toUpperCase();
-  document.getElementById('userAvatar')!.textContent = initial;
+  document.getElementById('userAvatar')!.textContent = user.username.charAt(0).toUpperCase();
   document.getElementById('userName')!.textContent = user.username;
-  document.getElementById('userRole')!.textContent = user.role;
   document.getElementById('creditsCount')!.textContent = user.credits.toLocaleString();
-
   const roleBadge = document.getElementById('userRole')!;
+  roleBadge.textContent = user.role;
   roleBadge.className = `user-role role-${user.role.toLowerCase()}`;
+
+  // Pre-select model from admin's setting — user can still override in-session
+  if (user.aiModel) {
+    (document.getElementById('modelSelect') as HTMLSelectElement).value = user.aiModel;
+  }
 
   initSidebar('chat', user.role);
 }
 
+// ─── Conversations list ───────────────────────────────────────────────────────
+
+async function loadConversations() {
+  const res = await fetch(`${API_URL}/chat/conversations`, { credentials: 'include' });
+  if (!res.ok) return;
+  const convs: ConversationSummary[] = await res.json();
+  renderConvList(convs);
+
+  if (convs.length > 0) {
+    await selectConversation(convs[0].id);
+  }
+}
+
+function renderConvList(convs: ConversationSummary[]) {
+  const container = document.getElementById('convItems')!;
+  if (convs.length === 0) {
+    container.innerHTML = `<div class="conv-empty">No conversations yet</div>`;
+    return;
+  }
+  container.innerHTML = convs.map(c => {
+    const preview = c.messages[0]?.content ?? 'No messages';
+    const title = c.title ?? 'New conversation';
+    return `
+      <div class="conv-item${c.id === currentConversationId ? ' active' : ''}" data-id="${c.id}">
+        <span class="conv-icon">◎</span>
+        <div class="conv-meta">
+          <span class="conv-name">${escapeHtml(title)}</span>
+          <span class="conv-preview">${escapeHtml(preview.slice(0, 40))}${preview.length > 40 ? '…' : ''}</span>
+        </div>
+        <button class="conv-delete" data-id="${c.id}" title="Delete">✕</button>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll<HTMLElement>('.conv-item').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).classList.contains('conv-delete')) return;
+      selectConversation(el.dataset.id!);
+    });
+  });
+
+  container.querySelectorAll<HTMLButtonElement>('.conv-delete').forEach(btn => {
+    btn.addEventListener('click', () => deleteConversation(btn.dataset.id!));
+  });
+}
+
+function setActiveConvItem(id: string) {
+  document.querySelectorAll('.conv-item').forEach(el => {
+    el.classList.toggle('active', (el as HTMLElement).dataset.id === id);
+  });
+}
+
+async function selectConversation(id: string) {
+  currentConversationId = id;
+  setActiveConvItem(id);
+
+  const res = await fetch(`${API_URL}/chat/conversations/${id}/messages`, { credentials: 'include' });
+  if (!res.ok) return;
+  const msgs: (Message & { id: string })[] = await res.json();
+
+  const area = document.getElementById('messagesArea')!;
+  area.innerHTML = '';
+
+  if (msgs.length === 0) {
+    showEmptyState();
+    return;
+  }
+
+  msgs.forEach(m => renderMessage(m));
+  area.scrollTop = area.scrollHeight;
+
+  const convItem = document.querySelector<HTMLElement>(`.conv-item[data-id="${id}"] .conv-name`);
+  document.getElementById('chatTitle')!.textContent = convItem?.textContent ?? 'Conversation';
+}
+
+async function deleteConversation(id: string) {
+  await fetch(`${API_URL}/chat/conversations/${id}`, { method: 'DELETE', credentials: 'include' });
+
+  if (currentConversationId === id) {
+    currentConversationId = null;
+    showEmptyState();
+    document.getElementById('chatTitle')!.textContent = 'New conversation';
+  }
+
+  const res = await fetch(`${API_URL}/chat/conversations`, { credentials: 'include' });
+  if (res.ok) renderConvList(await res.json());
+}
+
+// ─── Messages ────────────────────────────────────────────────────────────────
+
+function showEmptyState() {
+  document.getElementById('messagesArea')!.innerHTML = `
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">◎</div>
+      <h3>Start a conversation</h3>
+      <p>Ask anything — MydAIHub AI is ready to help</p>
+    </div>
+  `;
+}
+
 function renderMessage(msg: Message, isTemp = false) {
   const area = document.getElementById('messagesArea')!;
-  const emptyState = document.getElementById('emptyState');
-  if (emptyState) emptyState.remove();
+  document.getElementById('emptyState')?.remove();
 
   const el = document.createElement('div');
   el.className = `message ${msg.role}`;
@@ -63,6 +171,8 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
+// ─── Send ─────────────────────────────────────────────────────────────────────
+
 async function sendMessage() {
   if (isLoading) return;
   const input = document.getElementById('chatInput') as HTMLTextAreaElement;
@@ -74,12 +184,8 @@ async function sendMessage() {
   isLoading = true;
   document.getElementById('sendBtn')!.setAttribute('disabled', 'true');
 
-  const userMsg: Message = { role: 'user', content: text };
-  messages.push(userMsg);
-  renderMessage(userMsg);
-
-  // Temp loading bubble
-  renderMessage({ role: 'ai', content: 'Thinking...' }, true);
+  renderMessage({ role: 'user', content: text });
+  renderMessage({ role: 'assistant', content: 'Thinking...' }, true);
 
   try {
     const res = await fetch(`${API_URL}/chat/message`, {
@@ -89,31 +195,40 @@ async function sendMessage() {
       body: JSON.stringify({
         message: text,
         model: (document.getElementById('modelSelect') as HTMLSelectElement).value,
+        conversationId: currentConversationId ?? undefined,
       }),
     });
 
-    const tempEl = document.getElementById('tempMsg');
-    if (tempEl) tempEl.remove();
+    document.getElementById('tempMsg')?.remove();
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      const errMsg = err.message || 'Failed to get response';
-      renderMessage({ role: 'ai', content: `Error: ${errMsg}` });
-    } else {
-      const data = await res.json();
-      const aiMsg: Message = { role: 'ai', content: data.reply || data.message || '' };
-      messages.push(aiMsg);
-      renderMessage(aiMsg);
-
-      // Update credits if returned
-      if (data.credits !== undefined) {
-        document.getElementById('creditsCount')!.textContent = data.credits.toLocaleString();
-      }
+      renderMessage({ role: 'assistant', content: `Error: ${err.message || 'Failed to get response'}` });
+      return;
     }
+
+    const data = await res.json();
+    renderMessage({ role: 'assistant', content: data.reply || '' });
+
+    if (data.credits !== undefined) {
+      document.getElementById('creditsCount')!.textContent = data.credits.toLocaleString();
+    }
+
+    // Update conversation state and list
+    const isNew = !currentConversationId;
+    currentConversationId = data.conversationId;
+
+    if (isNew) {
+      document.getElementById('chatTitle')!.textContent = text.length > 50 ? text.slice(0, 47) + '...' : text;
+    }
+
+    const convRes = await fetch(`${API_URL}/chat/conversations`, { credentials: 'include' });
+    if (convRes.ok) renderConvList(await convRes.json());
+    setActiveConvItem(currentConversationId);
+
   } catch {
-    const tempEl = document.getElementById('tempMsg');
-    if (tempEl) tempEl.remove();
-    renderMessage({ role: 'ai', content: 'Error: Could not reach the server.' });
+    document.getElementById('tempMsg')?.remove();
+    renderMessage({ role: 'assistant', content: 'Error: Could not reach the server.' });
   } finally {
     isLoading = false;
     document.getElementById('sendBtn')!.removeAttribute('disabled');
@@ -121,37 +236,30 @@ async function sendMessage() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadUser();
+// ─── Init ─────────────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadUser();
+  await loadConversations();
 
   const input = document.getElementById('chatInput') as HTMLTextAreaElement;
-  const sendBtn = document.getElementById('sendBtn')!;
-
-  sendBtn.addEventListener('click', sendMessage);
+  document.getElementById('sendBtn')!.addEventListener('click', sendMessage);
 
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
 
-  // Auto-resize textarea
   input.addEventListener('input', () => {
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 160) + 'px';
   });
 
   document.getElementById('newChatBtn')!.addEventListener('click', () => {
-    messages.length = 0;
-    const area = document.getElementById('messagesArea')!;
-    area.innerHTML = `
-      <div class="empty-state" id="emptyState">
-        <div class="empty-icon">◎</div>
-        <h3>Start a conversation</h3>
-        <p>Ask anything — MydAIHub AI is ready to help</p>
-      </div>
-    `;
+    currentConversationId = null;
+    showEmptyState();
+    document.getElementById('chatTitle')!.textContent = 'New conversation';
+    setActiveConvItem('');
+    input.focus();
   });
 
   document.getElementById('logoutBtn')!.addEventListener('click', async () => {

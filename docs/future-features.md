@@ -189,4 +189,7 @@ api.mydaihub.com   → backend
 | Rate limiting | ✅ แก้แล้ว |
 | Helmet headers | ✅ แก้แล้ว |
 | JWT validates user exists in DB | ✅ แก้แล้ว |
+| Conversation history (multi-turn chat) | ✅ implement แล้ว — `Conversation` + `Message` tables |
+| Chat auto-delete expired conversations | ✅ implement แล้ว — cron ทุกคืน 02:00 ลบ conversation ที่ inactive > 7 วัน |
+| Admin กำหนด AI model default ให้ user | ✅ implement แล้ว — `user.aiModel` + frontend pre-select |
 
