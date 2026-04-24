@@ -205,6 +205,27 @@ Authorization: Bearer <access_token>
 
 ---
 
+### PATCH /users/me
+บันทึก AI model ที่ user เลือกเป็น default ของตัวเอง
+
+**Auth** — cookie อัตโนมัติ
+
+**Request Body**
+```json
+{ "aiModel": "meta-llama/llama-3.3-70b-instruct:free" }
+```
+
+**Response 200**
+```json
+{ "aiModel": "meta-llama/llama-3.3-70b-instruct:free" }
+```
+
+**Errors**
+- `400` — aiModel ไม่อยู่ใน whitelist
+- `401` — Unauthorized
+
+---
+
 ## Admin
 
 > ทุก endpoint ในหมวดนี้ต้องการ role `ADMIN` — ถ้าไม่ใช่จะได้ `403 Forbidden`
@@ -224,7 +245,7 @@ Authorization: Bearer <access_token>
     "role": "USER | ADMIN",
     "status": "ACTIVE | DELETED",
     "credits": 0,
-    "aiModel": "llama-3.3-70b-versatile",
+    "aiModel": "meta-llama/llama-3.3-70b-instruct:free",
     "createdAt": "ISO8601",
     "lastLoginAt": "ISO8601 | null"
   }
@@ -247,7 +268,7 @@ Authorization: Bearer <access_token>
 {
   "credits": 500,
   "role": "USER | ADMIN",
-  "aiModel": "llama-3.3-70b-versatile | llama-3.1-70b-versatile | llama-3.1-8b-instant | llama3-70b-8192 | llama3-8b-8192 | gemma2-9b-it | gemma-7b-it | mixtral-8x7b-32768",
+  "aiModel": "OpenRouter model ID — ดู whitelist ใน src/admin/dto/update-user.dto.ts",
   "status": "ACTIVE | DELETED"
 }
 ```
@@ -261,7 +282,7 @@ Authorization: Bearer <access_token>
   "role": "USER | ADMIN",
   "status": "ACTIVE | DELETED",
   "credits": 500,
-  "aiModel": "llama-3.3-70b-versatile",
+  "aiModel": "meta-llama/llama-3.3-70b-instruct:free",
   "createdAt": "ISO8601",
   "lastLoginAt": "ISO8601 | null"
 }
@@ -294,7 +315,7 @@ Authorization: Bearer <access_token>
 ```json
 {
   "message": "string (required, max 4000 chars)",
-  "model": "llama-3.3-70b-versatile | llama-3.1-70b-versatile | llama-3.1-8b-instant | llama3-70b-8192 | llama3-8b-8192 | gemma2-9b-it | gemma-7b-it | mixtral-8x7b-32768 (optional, default: llama-3.3-70b-versatile)",
+  "model": "OpenRouter model ID (optional) — ดู whitelist ใน src/admin/dto/update-user.dto.ts, default: meta-llama/llama-3.3-70b-instruct:free",
   "conversationId": "uuid (optional — ถ้าไม่ส่งจะสร้าง conversation ใหม่)"
 }
 ```
@@ -380,3 +401,80 @@ Authorization: Bearer <access_token>
 - `401` — Unauthorized
 - `403` — Forbidden (ไม่ใช่ owner)
 - `404` — Conversation not found
+
+---
+
+## Payments
+
+> ทุก endpoint ในหมวดนี้ต้อง login ก่อน ยกเว้น `/payments/webhook`
+
+### POST /payments/charge
+สร้าง PromptPay QR สำหรับชำระเงินซื้อ credits
+
+**Auth** — cookie อัตโนมัติ
+
+**Request Body**
+```json
+{ "credits": 100 }
+```
+
+ค่า `credits` ที่รองรับ:
+
+| credits | ราคา (THB) |
+|---|---|
+| 100 | ฿29 |
+| 500 | ฿129 |
+| 1,000 | ฿239 |
+| 5,000 | ฿999 |
+
+**Response 200**
+```json
+{
+  "chargeId": "chrg_test_xxx",
+  "qrUrl": "https://...",
+  "amount": 29,
+  "credits": 100
+}
+```
+
+**Errors**
+- `400` — credits ไม่อยู่ใน package list
+- `401` — Unauthorized
+- `500` — Omise API error
+
+---
+
+### GET /payments/charge/:chargeId/status
+ตรวจสอบสถานะ — frontend poll ทุก 3 วินาที (ต้องเป็น owner ของ order)
+
+**Response 200**
+```json
+{ "status": "PENDING" | "PAID" | "FAILED", "credits": 100 }
+```
+
+**Errors**
+- `401` — Unauthorized
+- `403` — Forbidden
+- `404` — Order not found
+
+---
+
+### GET /payments/orders
+ดูประวัติการซื้อ credits ทั้งหมด เรียงจากใหม่ไปเก่า
+
+**Response 200**
+```json
+[{ "id": "uuid", "credits": 100, "amount": 2900, "status": "PAID", "createdAt": "ISO8601" }]
+```
+
+> `amount` หน่วย satang (THB × 100)
+
+**Errors**
+- `401` — Unauthorized
+
+---
+
+### POST /payments/webhook
+รับ event จาก Omise — **ไม่ต้อง auth**
+
+Backend verify โดยดึง charge จาก Omise API โดยตรง แล้วเติม credits อัตโนมัติถ้า `status === 'successful'`

@@ -38,9 +38,11 @@ async function loadUser() {
   roleBadge.textContent = user.role;
   roleBadge.className = `user-role role-${user.role.toLowerCase()}`;
 
-  // Pre-select model from admin's setting — user can still override in-session
+  // Pre-select model from admin's setting only if option exists in current list
   if (user.aiModel) {
-    (document.getElementById('modelSelect') as HTMLSelectElement).value = user.aiModel;
+    const sel = document.getElementById('modelSelect') as HTMLSelectElement;
+    const exists = Array.from(sel.options).some(o => o.value === user.aiModel);
+    if (exists) sel.value = user.aiModel;
   }
 
   initSidebar('chat', user.role);
@@ -231,6 +233,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   input.addEventListener('input', () => {
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.qp-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const prompt = chip.dataset.prompt ?? '';
+      input.value = prompt;
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    });
+  });
+
+  (document.getElementById('modelSelect') as HTMLSelectElement).addEventListener('change', (e) => {
+    const model = (e.target as HTMLSelectElement).value;
+    fetch(`${API_URL}/users/me`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ aiModel: model }),
+    }).catch(() => {});
   });
 
   document.getElementById('newChatBtn')!.addEventListener('click', () => {

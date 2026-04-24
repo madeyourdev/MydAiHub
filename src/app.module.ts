@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { AdminModule } from './admin/admin.module';
 import { ChatModule } from './chat/chat.module';
+import { PaymentModule } from './payments/payment.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 
@@ -16,6 +17,7 @@ import { APP_GUARD } from '@nestjs/core';
     UsersModule,
     AdminModule,
     ChatModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [

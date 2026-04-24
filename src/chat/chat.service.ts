@@ -12,13 +12,17 @@ import OpenAI from 'openai';
 import type { Conversation } from '@prisma/client';
 
 const CREDIT_COST = 1;
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
 const SYSTEM_PROMPT = 'You are a helpful AI assistant.';
 const HISTORY_LIMIT = 20;
 
 const client = new OpenAI({
-  baseURL: 'https://api.groq.com/openai/v1',
-  apiKey: process.env.GROQ_API_KEY,
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+  defaultHeaders: {
+    'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
+    'X-Title': 'MydAIHub',
+  },
 });
 
 @Injectable()
@@ -29,7 +33,7 @@ export class ChatService {
   async sendMessage(
     userId: string,
     message: string,
-    model: string,
+    model: string | undefined,
     conversationId?: string,
   ): Promise<{ reply: string; credits: number; conversationId: string }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -56,7 +60,7 @@ export class ChatService {
       select: { role: true, content: true },
     });
 
-    // Call Groq — user.aiModel is admin's default; frontend model overrides per-session
+    // Call OpenRouter — user.aiModel is admin's default; frontend model overrides per-session
     const resolvedModel = model || user.aiModel || DEFAULT_MODEL;
     let reply: string;
     let inputTokens: number | undefined;
@@ -74,7 +78,10 @@ export class ChatService {
       reply = response.choices[0].message.content ?? '';
       inputTokens = response.usage?.prompt_tokens;
       outputTokens = response.usage?.completion_tokens;
-    } catch {
+    } catch (err: any) {
+      this.logger.error('OpenRouter API error', err?.message);
+      const status = err?.status ?? err?.response?.status;
+      if (status === 429) throw new BadRequestException(`Model "${resolvedModel}" rate limit exceeded — please try again later or select a different model`);
       throw new InternalServerErrorException('Failed to get response from AI');
     }
 

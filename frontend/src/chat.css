@@ -158,6 +158,7 @@
   border-color: rgba(99, 102, 241, 0.5);
 }
 
+
 /* ── Messages ── */
 .messages-area {
   flex: 1;
@@ -338,4 +339,38 @@
   font-size: 11px;
   color: #334155;
   text-align: center;
+}
+
+/* ── Quick prompts ── */
+.quick-prompts {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  scrollbar-width: none;
+}
+
+.quick-prompts::-webkit-scrollbar {
+  display: none;
+}
+
+.qp-chip {
+  flex-shrink: 0;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.qp-chip:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #a5b4fc;
 }

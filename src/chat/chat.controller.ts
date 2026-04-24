@@ -31,7 +31,7 @@ export class ChatController {
     return this.chatService.sendMessage(
       req.user.userId,
       dto.message.trim(),
-      dto.model || 'llama-3.3-70b-versatile',
+      dto.model,
       dto.conversationId,
     );
   }

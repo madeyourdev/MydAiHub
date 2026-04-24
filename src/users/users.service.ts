@@ -42,6 +42,14 @@ export class UsersService {
     });
   }
 
+  async updateAiModel(id: string, aiModel: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: { aiModel },
+      select: { aiModel: true },
+    });
+  }
+
   async findOrCreateByGoogle(data: { googleId: string; email: string; username: string }) {
     let user = await this.prisma.user.findFirst({
       where: { googleId: data.googleId, status: 'ACTIVE' },

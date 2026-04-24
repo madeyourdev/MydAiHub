@@ -174,19 +174,82 @@ api.mydaihub.com   → backend
 
 ---
 
+## Dynamic Quick Prompt Chips
+
+### สถานะปัจจุบัน
+
+Quick prompt chips บนหน้า Chat เป็น **hardcoded 8 ตัวคงที่** (`Translate`, `Summarize`, `Write code` ฯลฯ) ใน `frontend/chat.html` — ยังไม่ได้ดึงจากข้อมูลจริงของ user
+
+### เป้าหมาย
+
+แสดง chips ที่สะท้อน **topic ที่ user ในระบบถามบ่อยที่สุด** จริงๆ — chips เปลี่ยนตาม behavior ของผู้ใช้โดยอัตโนมัติ
+
+---
+
+### แนวทางที่แนะนำ: Cron + PromptStat table
+
+แบ่ง concern ชัดเจนระหว่าง "คำนวณ" (background) กับ "อ่าน" (instant)
+
+**Flow:**
+```
+Cron ทุก 6 ชั่วโมง
+  → query first message ของแต่ละ Conversation
+  → match กับ keyword categories (translate, code, explain ฯลฯ)
+  → upsert count ลง PromptStat table (ไม่เกิน 8 แถว)
+
+GET /chat/popular-prompts
+  → SELECT top 8 FROM PromptStat (instant)
+  → frontend render chips ตาม rank จริง
+```
+
+**DB Schema ที่ต้องเพิ่ม:**
+```prisma
+model PromptStat {
+  id        String   @id @default(uuid())
+  category  String   @unique  // "translate", "code", "explain" ฯลฯ
+  label     String            // "🌐 Translate"
+  prompt    String            // template ที่ pre-fill ใน input
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+```
+
+**Keyword categories (ตัวอย่าง):**
+
+| Category | Keywords | Label | Prompt template |
+|---|---|---|---|
+| translate | translate, แปล | 🌐 Translate | `Translate the following to English:\n` |
+| code | code, function, bug, script | 💻 Write code | `Write code to ` |
+| explain | explain, อธิบาย, what is, คืออะไร | 💡 Explain | `Explain how ` |
+| summarize | summarize, สรุป, summary | 📝 Summarize | `Summarize the following:\n` |
+| fix | fix, grammar, แก้, error | ✏️ Fix grammar | `Fix the grammar and improve:\n` |
+| brainstorm | idea, brainstorm, suggest, แนะนำ | 🧠 Brainstorm | `Brainstorm 5 ideas for ` |
+| compare | compare, เปรียบเทียบ, vs, difference | ⚖️ Compare | `Compare ` |
+| howto | how to, วิธี, step, guide | 📋 How to | `Create a step-by-step guide on ` |
+
+**Fallback:** ถ้า category ไหนยังไม่มีข้อมูล (system ใหม่) ใช้ hardcoded default แทน
+
+---
+
+### ทางเลือกอื่น (ถ้าไม่อยากสร้าง table ใหม่)
+
+**Track chip clicks** — นับว่า chip ไหนถูกกดบ่อยสุด แล้วเรียงใหม่
+- ง่ายกว่า: เพิ่ม counter ใน DB หรือ in-memory
+- ข้อเสีย: chips ยังเป็น 8 ตัวเดิม แค่เรียงใหม่ตาม popularity ไม่ได้ reflect conversation จริง
+
+---
+
 ## Upcoming Business Features
 
-### 1. Payment Gateway Integration
-**ปัญหาปัจจุบัน:** การเติม Credits ทำได้แค่ให้ Admin กรอกให้แบบ Manual หน้าบ้านผ่าน Admin Panel (`PATCH /admin/users/:id`) 
-**แผนพัฒนา:** 
-- เชื่อมต่อ API ผู้ให้บริการชำระเงิน (Stripe Checkout สำหรับบัตรเครดิต หรือ PromptPay QR)
-- สร้างระบบ Webhook webhook-receiver: ทันทีที่ลูกค้าจ่ายเงินสำเร็จ ระบบจะเติม `credits` ลงตาราง User ให้อัตโนมัติ
+### ~~1. Payment Gateway Integration~~ ✅ implement แล้ว
 
-### 2. AI Provider Migration (Groq → OpenRouter)
-**ปัญหาปัจจุบัน:** ตอนนี้ระบบแชทใช้งานเฉพาะโมเดลบน Groq ผ่านคีย์ `GROQ_API_KEY` (เช่น Llama 3)
-**แผนพัฒนา:** 
-- ย้าย API endpoint ไปเป็น OpenRouter (ด้วยคีย์ `OPENROUTER_API_KEY`)
-- ลดความยุ่งยากเพราะ OpenRouter รองรับโมเดลแบบ OpenAI-compatible เหมือนที่ทำอยู่แล้ว แต่จะได้โมเดลดังๆ อย่าง ChatGPT (OpenAI), Claude (Anthropic), Gemini (Google) เข้ามาอยู่ในระบบเดียวกันครบถ้วน
+ระบบชำระเงิน Omise + PromptPay QR implement แล้ว ดูรายละเอียดใน `docs/payments.md`
+
+**สถานะ:** sandbox mode — ก่อนขึ้น production ต้องเปลี่ยน keys และตั้ง webhook ตาม checklist ใน `docs/payments.md`
+
+### ~~2. AI Provider Migration (Groq → OpenRouter)~~ ✅ implement แล้ว
+
+`baseURL` เปลี่ยนเป็น `https://openrouter.ai/api/v1` และใช้ `OPENROUTER_API_KEY` แล้ว รองรับโมเดลจากทุก provider ผ่าน API เดียว ดู model list ใน `src/admin/dto/update-user.dto.ts`
 
 ### 3. Dynamic AI Models Management
 **ปัญหาปัจจุบัน:** รายชื่อโมเดลตัวเลือก (Dropdown) ถูกฝังโค้ดติดตัวหนังสือไว้ (Hardcoded) ใน `frontend/admin.html`
@@ -221,4 +284,5 @@ api.mydaihub.com   → backend
 | Conversation history (multi-turn chat) | ✅ implement แล้ว — `Conversation` + `Message` tables |
 | Chat auto-delete expired conversations | ✅ implement แล้ว — cron ทุกคืน 02:00 ลบ conversation ที่ inactive > 7 วัน |
 | Admin กำหนด AI model default ให้ user | ✅ implement แล้ว — `user.aiModel` + frontend pre-select |
+| Payment Gateway (PromptPay QR) | ✅ implement แล้ว — Omise sandbox, ดู `docs/payments.md` สำหรับ production checklist |
 

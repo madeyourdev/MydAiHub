@@ -18,11 +18,12 @@ model User {
   credits       Int            @default(0)
   role          Role           @default(USER)
   status        UserStatus     @default(ACTIVE)
-  aiModel       String         @default("llama-3.3-70b-versatile")
+  aiModel       String         @default("meta-llama/llama-3.3-70b-instruct:free")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   lastLoginAt   DateTime?
   conversations Conversation[]
+  orders        Order[]
 }
 
 model Conversation {
@@ -60,4 +61,22 @@ enum Role {
 enum UserStatus {
   ACTIVE
   DELETED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model Order {
+  id        String      @id @default(uuid())
+  userId    String
+  credits   Int
+  amount    Int
+  status    OrderStatus @default(PENDING)
+  chargeId  String?     @unique
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id])
 }

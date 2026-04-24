@@ -92,6 +92,26 @@
       <div id="toastMsg" class="toast hidden"></div>
     </main>
 
+    <!-- QR Payment Modal -->
+    <div class="qr-overlay hidden" id="qrOverlay">
+      <div class="qr-modal">
+        <button class="qr-close" id="qrClose">✕</button>
+        <div class="qr-header">
+          <span class="qr-label">PromptPay</span>
+          <div class="qr-summary" id="qrSummary">— credits / ฿—</div>
+        </div>
+        <div class="qr-body" id="qrBody">
+          <img class="qr-image" id="qrImage" src="" alt="PromptPay QR" />
+        </div>
+        <div class="qr-status" id="qrStatus">
+          <span class="qr-status-dot pending"></span>
+          <span id="qrStatusText">Waiting for payment…</span>
+        </div>
+        <div class="qr-timer" id="qrTimer">QR หมดอายุใน <span id="qrCountdown">15:00</span></div>
+        <button class="dev-pay-btn hidden" id="devPayBtn">⚡ Simulate Payment (Dev only)</button>
+      </div>
+    </div>
+
     <div class="blob blob-1"></div>
     <div class="blob blob-2"></div>
     <script type="module" src="/src/credits.ts"></script>

@@ -80,14 +80,22 @@
           <div class="model-selector">
             <span class="model-label">Model</span>
             <select id="modelSelect" class="model-select">
-              <option value="llama-3.3-70b-versatile">Llama 3.3 70B (recommended)</option>
-              <option value="llama-3.1-70b-versatile">Llama 3.1 70B</option>
-              <option value="llama-3.1-8b-instant">Llama 3.1 8B (fastest)</option>
-              <option value="llama3-70b-8192">Llama 3 70B</option>
-              <option value="llama3-8b-8192">Llama 3 8B</option>
-              <option value="gemma2-9b-it">Gemma 2 9B</option>
-              <option value="gemma-7b-it">Gemma 7B</option>
-              <option value="mixtral-8x7b-32768">Mixtral 8x7B (32k ctx)</option>
+              <optgroup label="Free">
+                <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (free)</option>
+                <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B (free · fastest)</option>
+                <option value="google/gemma-2-9b-it:free">Gemma 2 9B (free)</option>
+                <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (free)</option>
+              </optgroup>
+              <optgroup label="Paid">
+                <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+                <option value="openai/gpt-4o">GPT-4o</option>
+                <option value="anthropic/claude-3-5-haiku">Claude 3.5 Haiku</option>
+                <option value="anthropic/claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+                <option value="google/gemini-flash-1.5">Gemini 1.5 Flash</option>
+                <option value="google/gemini-pro-1.5">Gemini 1.5 Pro</option>
+                <option value="meta-llama/llama-3.3-70b-instruct">Llama 3.3 70B</option>
+                <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B</option>
+              </optgroup>
             </select>
           </div>
         </div>
@@ -101,6 +109,16 @@
         </div>
 
         <div class="chat-input-area">
+          <div class="quick-prompts" id="quickPrompts">
+            <button class="qp-chip" data-prompt="Translate the following text to English:&#10;">🌐 Translate</button>
+            <button class="qp-chip" data-prompt="Summarize the following in bullet points:&#10;">📝 Summarize</button>
+            <button class="qp-chip" data-prompt="Write code to ">💻 Write code</button>
+            <button class="qp-chip" data-prompt="Explain how ">💡 Explain</button>
+            <button class="qp-chip" data-prompt="Fix the grammar and improve the writing of:&#10;">✏️ Fix grammar</button>
+            <button class="qp-chip" data-prompt="Brainstorm 5 ideas for ">🧠 Brainstorm</button>
+            <button class="qp-chip" data-prompt="Compare ">⚖️ Compare</button>
+            <button class="qp-chip" data-prompt="Create a step-by-step guide on how to ">📋 How to</button>
+          </div>
           <div class="input-row">
             <textarea
               id="chatInput"
