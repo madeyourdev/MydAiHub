@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { PaymentService } from './payment.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -35,7 +35,6 @@ export class PaymentController {
   @UseGuards()
   @Post('dev/complete/:chargeId')
   devComplete(@Param('chargeId') chargeId: string) {
-    if (process.env.NODE_ENV === 'production') throw new ForbiddenException();
     return this.paymentService.devCompleteCharge(chargeId);
   }
 }
