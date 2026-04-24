@@ -120,13 +120,8 @@ function openQrModal(chargeId: string, qrUrl: string, credits: number, price: nu
   document.getElementById('qrOverlay')!.classList.remove('hidden');
 
   const devBtn = document.getElementById('devPayBtn')!;
-  const isDev = API_URL.includes('localhost') || API_URL.includes('127.0.0.1');
-  if (isDev) {
-    devBtn.classList.remove('hidden');
-    devBtn.onclick = () => simulatePayment(chargeId);
-  } else {
-    devBtn.classList.add('hidden');
-  }
+  devBtn.classList.remove('hidden');
+  devBtn.onclick = () => simulatePayment(chargeId);
 
   startCountdown(15 * 60);
   startPolling(chargeId, credits);
