@@ -1,4 +1,15 @@
-import { Controller, Post, Get, Delete, Body, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+  Res,
+  BadRequestException,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ChatService } from './chat.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -33,6 +44,22 @@ export class ChatController {
       dto.message.trim(),
       dto.model,
       dto.conversationId,
+    );
+  }
+
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
+  @Post('stream')
+  async streamMessage(@Request() req: any, @Body() dto: SendMessageDto, @Res() res: any) {
+    if (!dto.message?.trim()) {
+      res.status(400).json({ message: 'Message cannot be empty' });
+      return;
+    }
+    await this.chatService.streamMessage(
+      req.user.userId,
+      dto.message.trim(),
+      dto.model,
+      dto.conversationId,
+      res,
     );
   }
 

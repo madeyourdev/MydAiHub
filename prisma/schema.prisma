@@ -24,6 +24,21 @@ model User {
   lastLoginAt   DateTime?
   conversations Conversation[]
   orders        Order[]
+  summaries     ConversationSummary[]
+  memories      UserMemory[]
+}
+
+model UserMemory {
+  id        String   @id @default(uuid())
+  userId    String
+  fact      String
+  source    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([source])
 }
 
 model Conversation {
@@ -35,8 +50,26 @@ model Conversation {
   expiresAt DateTime?
   user      User      @relation(fields: [userId], references: [id])
   messages  Message[]
+  summaries ConversationSummary[]
 
   @@index([userId, updatedAt(sort: Desc)])
+}
+
+model ConversationSummary {
+  id             String   @id @default(uuid())
+  userId         String
+  conversationId String
+  fromIndex      Int
+  toIndex        Int
+  content        String
+  embedding      Unsupported("vector(512)")
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id])
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([conversationId])
 }
 
 model Message {

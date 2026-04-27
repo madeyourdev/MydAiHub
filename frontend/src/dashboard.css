@@ -282,3 +282,77 @@
   color: #6366f1;
   transform: translateX(3px);
 }
+
+/* ── AI Memory ── */
+.memory-section {
+  margin-top: 40px;
+}
+
+.memory-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.memory-hint {
+  font-size: 12px;
+  color: #475569;
+}
+
+.memory-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 48px;
+}
+
+.memory-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #475569;
+  font-size: 13px;
+  padding: 16px 0;
+}
+
+.memory-empty-icon {
+  font-size: 20px;
+  opacity: 0.5;
+}
+
+.memory-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 20px;
+  padding: 6px 14px 6px 16px;
+  transition: border-color 0.2s;
+}
+
+.memory-chip:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.memory-fact {
+  font-size: 13px;
+  color: #c7d2fe;
+}
+
+.memory-delete {
+  background: none;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.memory-delete:hover {
+  color: #ef4444;
+}

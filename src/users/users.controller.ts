@@ -1,7 +1,8 @@
-import { Controller, Get, Patch, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { IsIn } from 'class-validator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UsersService } from './users.service';
+import { MemoryService } from '../memory/memory.service';
 import { AI_MODELS } from '../admin/dto/update-user.dto';
 
 class UpdateMeDto {
@@ -11,7 +12,10 @@ class UpdateMeDto {
 
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private memoryService: MemoryService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
@@ -25,5 +29,17 @@ export class UsersController {
   @Patch('me')
   updateMe(@Request() req: any, @Body() dto: UpdateMeDto) {
     return this.usersService.updateAiModel(req.user.userId, dto.aiModel);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/memories')
+  getMemories(@Request() req: any) {
+    return this.memoryService.getMemoriesWithId(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('me/memories/:id')
+  deleteMemory(@Request() req: any, @Param('id') id: string) {
+    return this.memoryService.deleteFact(id, req.user.userId);
   }
 }

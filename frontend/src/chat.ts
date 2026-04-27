@@ -165,11 +165,23 @@ async function sendMessage() {
   isLoading = true;
   document.getElementById('sendBtn')!.setAttribute('disabled', 'true');
 
+  const isNew = !currentConversationId;
   renderMessage({ role: 'user', content: text });
-  renderMessage({ role: 'assistant', content: 'Thinking...' }, true);
+
+  // Create streaming AI bubble
+  const area = document.getElementById('messagesArea')!;
+  document.getElementById('emptyState')?.remove();
+  const aiEl = document.createElement('div');
+  aiEl.className = 'message assistant';
+  aiEl.id = 'streamingMsg';
+  aiEl.innerHTML = `<div class="msg-avatar">✦</div><div class="msg-bubble loading" id="streamingBubble">▌</div>`;
+  area.appendChild(aiEl);
+  area.scrollTop = area.scrollHeight;
+
+  let replyText = '';
 
   try {
-    const res = await fetch(`${API_URL}/chat/message`, {
+    const res = await fetch(`${API_URL}/chat/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -180,24 +192,54 @@ async function sendMessage() {
       }),
     });
 
-    document.getElementById('tempMsg')?.remove();
-
-    if (!res.ok) {
+    if (!res.ok || !res.body) {
       const err = await res.json().catch(() => ({}));
+      document.getElementById('streamingMsg')?.remove();
       renderMessage({ role: 'assistant', content: `Error: ${err.message || 'Failed to get response'}` });
       return;
     }
 
-    const data = await res.json();
-    renderMessage({ role: 'assistant', content: data.reply || '' });
+    const bubble = document.getElementById('streamingBubble')!;
+    bubble.classList.remove('loading');
 
-    if (data.credits !== undefined) {
-      document.getElementById('creditsCount')!.textContent = data.credits.toLocaleString();
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const event = JSON.parse(line.slice(6));
+          if (event.type === 'chunk') {
+            replyText += event.content;
+            bubble.textContent = replyText + '▌';
+            area.scrollTop = area.scrollHeight;
+          } else if (event.type === 'done') {
+            bubble.textContent = replyText;
+            if (event.credits !== undefined) {
+              document.getElementById('creditsCount')!.textContent = event.credits.toLocaleString();
+            }
+            currentConversationId = event.conversationId;
+          } else if (event.type === 'error') {
+            bubble.textContent = `Error: ${event.message}`;
+          }
+        } catch { /* ignore malformed events */ }
+      }
     }
 
-    // Update conversation state and list
-    const isNew = !currentConversationId;
-    currentConversationId = data.conversationId;
+    // Remove trailing cursor if present
+    const bubble2 = document.getElementById('streamingBubble');
+    if (bubble2?.textContent?.endsWith('▌')) bubble2.textContent = replyText;
+
+    document.getElementById('streamingMsg')!.removeAttribute('id');
 
     if (isNew) {
       document.getElementById('chatTitle')!.textContent = text.length > 50 ? text.slice(0, 47) + '...' : text;
@@ -205,10 +247,10 @@ async function sendMessage() {
 
     const convRes = await fetch(`${API_URL}/chat/conversations`, { credentials: 'include' });
     if (convRes.ok) renderConvList(await convRes.json());
-    setActiveConvItem(data.conversationId);
+    if (currentConversationId) setActiveConvItem(currentConversationId);
 
   } catch {
-    document.getElementById('tempMsg')?.remove();
+    document.getElementById('streamingMsg')?.remove();
     renderMessage({ role: 'assistant', content: 'Error: Could not reach the server.' });
   } finally {
     isLoading = false;

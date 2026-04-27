@@ -166,11 +166,21 @@ app.useGlobalPipes(new ValidationPipe({
 
 ตอนนี้ frontend (`frontend-production-640a.up.railway.app`) และ backend (`mydaihub-production.up.railway.app`) อยู่คนละ domain กัน ทำให้ต้องใช้ `SameSite: none` เพื่อให้ browser ส่ง cookie ข้าม domain ได้ ซึ่งลด CSRF protection ลง แต่ยังมี CORS guard ช่วยอยู่
 
-**แผนระยะยาว:** เมื่อมี custom domain ให้ย้ายมาใช้ subdomain เดียวกัน แล้วเปลี่ยนกลับเป็น `SameSite: lax`
+> ⚠️ **ปัญหาที่พบ (2026-04-25):** Safari บล็อก cross-site cookie ด้วย ITP (Intelligent Tracking Prevention) ทำให้ user ที่ใช้ Safari ไม่สามารถ login ได้ — เด้งกลับหน้า login ทันที Chrome และ browser อื่นใช้งานได้ปกติ
+
+**แผนระยะยาว:** เมื่อมี custom domain ให้ย้ายมาใช้ subdomain เดียวกัน แล้วเปลี่ยนกลับเป็น `SameSite: lax` — Safari จะผ่านทันที
 ```
-app.mydaihub.com   → frontend
-api.mydaihub.com   → backend
+app.mydaihub.com   → frontend (Railway custom domain)
+api.mydaihub.com   → backend (Railway custom domain)
 ```
+
+**ขั้นตอนเมื่อพร้อม:**
+1. ซื้อ domain (แนะนำ Cloudflare — ถูกสุด + DNS ดี)
+2. ตั้ง Custom Domain ใน Railway ทั้ง frontend และ backend service
+3. ตั้ง DNS CNAME ตาม Railway บอก
+4. แก้ `VITE_API_URL` → `https://api.mydaihub.com`
+5. แก้ `FRONTEND_URL` → `https://app.mydaihub.com`
+6. แก้ `sameSite: 'none'` → `'lax'` ใน `src/auth/auth.service.ts`
 
 ---
 

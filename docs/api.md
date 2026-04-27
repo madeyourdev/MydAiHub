@@ -305,9 +305,11 @@ Authorization: Bearer <access_token>
 
 **หลักการหัก credits**
 - Backend เป็นผู้จัดการทั้งหมด — frontend ปรับตัวเลขเองไม่ได้
-- ตรวจยอด credits ก่อนเรียก AI ทุกครั้ง
-- หัก **1 credit ต่อ 1 message** (ปรับได้ที่ `CREDIT_COST` ใน `src/chat/chat.service.ts`)
+- ตรวจยอด credits ก่อนเรียก AI ทุกครั้ง (ต้องมีอย่างน้อย 1 credit)
+- หัก credits ตาม token จริงที่ใช้: `max(1, ceil((inputTokens + outputTokens) / 1000))`
 - ถ้า credits ไม่พอ → ส่ง error กลับ ไม่เรียก AI
+
+**Rate Limit** — สูงสุด 20 messages ต่อ user ต่อ 60 วินาที (429 ถ้าเกิน)
 
 **Auth** — ส่งผ่าน cookie อัตโนมัติ
 
@@ -334,7 +336,52 @@ Authorization: Bearer <access_token>
 - `400` — Insufficient credits
 - `401` — Unauthorized
 - `404` — Conversation not found
-- `500` — Failed to get response from AI (Groq API error)
+- `429` — Rate limit exceeded (20 messages/minute per user)
+- `500` — Failed to get response from AI
+
+---
+
+### POST /chat/stream
+เหมือน `/chat/message` แต่ส่งคำตอบเป็น Server-Sent Events (SSE) แบบ real-time — AI พิมพ์ทีละ token
+
+**หลักการหัก credits** — เหมือนกับ `/chat/message` (token-based, deduct หลัง stream จบ)
+
+**Rate Limit** — สูงสุด 20 messages ต่อ user ต่อ 60 วินาที
+
+**Auth** — ส่งผ่าน cookie อัตโนมัติ
+
+**Request Body**
+```json
+{
+  "message": "string (required, max 4000 chars)",
+  "model": "OpenRouter model ID (optional)",
+  "conversationId": "uuid (optional)"
+}
+```
+
+**Response** — `Content-Type: text/event-stream`
+
+แต่ละ event เป็น `data: <JSON>\n\n`:
+
+```
+data: {"type":"chunk","content":"Hello"}
+
+data: {"type":"chunk","content":" world"}
+
+data: {"type":"done","credits":98,"conversationId":"uuid"}
+```
+
+| type | เมื่อไหร่ | fields |
+|---|---|---|
+| `chunk` | ทุกครั้งที่ได้ token ใหม่ | `content: string` |
+| `done` | หลัง stream จบ บันทึก DB แล้ว | `credits: number`, `conversationId: string` |
+| `error` | ถ้า AI error หลัง stream เริ่มแล้ว | `message: string` |
+
+**Errors (ก่อน stream เริ่ม — JSON ปกติ)**
+- `400` — Message cannot be empty / Insufficient credits
+- `401` — Unauthorized
+- `404` — Conversation not found
+- `429` — Rate limit exceeded
 
 ---
 

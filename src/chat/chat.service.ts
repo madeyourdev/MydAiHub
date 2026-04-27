@@ -4,17 +4,23 @@ import {
   InternalServerErrorException,
   ForbiddenException,
   NotFoundException,
+  HttpException,
+  HttpStatus,
   Logger,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { SummaryService } from '../summary/summary.service';
+import { MemoryService } from '../memory/memory.service';
 import OpenAI from 'openai';
 import type { Conversation } from '@prisma/client';
+import type { Response } from 'express';
 
-const CREDIT_COST = 1;
 const DEFAULT_MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
 const SYSTEM_PROMPT = 'You are a helpful AI assistant.';
 const HISTORY_LIMIT = 20;
+const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_WINDOW_MS = 60_000;
 
 const client = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
@@ -28,7 +34,63 @@ const client = new OpenAI({
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
-  constructor(private prisma: PrismaService) {}
+  private readonly userRateLimit = new Map<string, { count: number; resetAt: number }>();
+
+  constructor(
+    private prisma: PrismaService,
+    private summaryService: SummaryService,
+    private memoryService: MemoryService,
+  ) {}
+
+  private checkRateLimit(userId: string): void {
+    const now = Date.now();
+    const entry = this.userRateLimit.get(userId);
+    if (!entry || entry.resetAt <= now) {
+      this.userRateLimit.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+      return;
+    }
+    if (entry.count >= RATE_LIMIT_MAX) {
+      throw new HttpException(
+        'Rate limit exceeded — maximum 20 messages per minute',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+    entry.count++;
+  }
+
+  private async loadContext(conversationId: string, userId: string, message: string) {
+    return Promise.all([
+      this.prisma.message
+        .findMany({
+          where: { conversationId },
+          orderBy: { createdAt: 'desc' },
+          take: HISTORY_LIMIT,
+          select: { role: true, content: true },
+        })
+        .then(msgs => msgs.reverse()),
+      this.summaryService.searchRelevant(userId, message, 3),
+      this.memoryService.getUserFacts(userId),
+    ]);
+  }
+
+  private buildMessages(
+    facts: string[],
+    memories: string[],
+    history: { role: string; content: string }[],
+    message: string,
+  ) {
+    return [
+      { role: 'system' as const, content: SYSTEM_PROMPT },
+      ...(facts.length
+        ? [{ role: 'system' as const, content: `What you know about this user:\n${facts.join('\n')}` }]
+        : []),
+      ...(memories.length
+        ? [{ role: 'system' as const, content: `Relevant context from past conversations:\n${memories.join('\n\n')}` }]
+        : []),
+      ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      { role: 'user' as const, content: message },
+    ];
+  }
 
   async sendMessage(
     userId: string,
@@ -36,11 +98,12 @@ export class ChatService {
     model: string | undefined,
     conversationId?: string,
   ): Promise<{ reply: string; credits: number; conversationId: string }> {
+    this.checkRateLimit(userId);
+
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('User not found');
-    if (user.credits < CREDIT_COST) throw new BadRequestException('Insufficient credits');
+    if (user.credits < 1) throw new BadRequestException('Insufficient credits');
 
-    // Get or create conversation
     let conversation: Conversation;
     if (conversationId) {
       const found = await this.prisma.conversation.findUnique({ where: { id: conversationId } });
@@ -52,16 +115,9 @@ export class ChatService {
       conversation = await this.prisma.conversation.create({ data: { userId, title } });
     }
 
-    // Load recent history for context
-    const history = await this.prisma.message.findMany({
-      where: { conversationId: conversation.id },
-      orderBy: { createdAt: 'asc' },
-      take: HISTORY_LIMIT,
-      select: { role: true, content: true },
-    });
-
-    // Call OpenRouter — user.aiModel is admin's default; frontend model overrides per-session
+    const [history, memories, facts] = await this.loadContext(conversation.id, userId, message);
     const resolvedModel = model || user.aiModel || DEFAULT_MODEL;
+
     let reply: string;
     let inputTokens: number | undefined;
     let outputTokens: number | undefined;
@@ -69,11 +125,7 @@ export class ChatService {
       const response = await client.chat.completions.create({
         model: resolvedModel,
         max_tokens: 1024,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-          { role: 'user', content: message },
-        ],
+        messages: this.buildMessages(facts, memories, history, message),
       });
       reply = response.choices[0].message.content ?? '';
       inputTokens = response.usage?.prompt_tokens;
@@ -81,17 +133,28 @@ export class ChatService {
     } catch (err: any) {
       this.logger.error('OpenRouter API error', err?.message);
       const status = err?.status ?? err?.response?.status;
-      if (status === 429) throw new BadRequestException(`Model "${resolvedModel}" rate limit exceeded — please try again later or select a different model`);
+      if (status === 429)
+        throw new BadRequestException(
+          `Model "${resolvedModel}" rate limit exceeded — please try again later or select a different model`,
+        );
       throw new InternalServerErrorException('Failed to get response from AI');
     }
 
-    // Save messages + deduct credits atomically
-    const [,,, updatedUser] = await this.prisma.$transaction([
+    const creditCost = Math.max(1, Math.ceil(((inputTokens ?? 0) + (outputTokens ?? 0)) / 1000));
+
+    const [, , , updatedUser] = await this.prisma.$transaction([
       this.prisma.message.create({
         data: { conversationId: conversation.id, role: 'user', content: message, model: resolvedModel },
       }),
       this.prisma.message.create({
-        data: { conversationId: conversation.id, role: 'assistant', content: reply, model: resolvedModel, inputTokens, outputTokens },
+        data: {
+          conversationId: conversation.id,
+          role: 'assistant',
+          content: reply,
+          model: resolvedModel,
+          inputTokens,
+          outputTokens,
+        },
       }),
       this.prisma.conversation.update({
         where: { id: conversation.id },
@@ -99,12 +162,135 @@ export class ChatService {
       }),
       this.prisma.user.update({
         where: { id: userId },
-        data: { credits: { decrement: CREDIT_COST } },
+        data: { credits: { decrement: creditCost } },
         select: { credits: true },
       }),
     ]);
 
+    this.summaryService.checkAndSummarize(conversation.id, userId, reply).catch(() => {});
+
     return { reply, credits: updatedUser.credits, conversationId: conversation.id };
+  }
+
+  async streamMessage(
+    userId: string,
+    message: string,
+    model: string | undefined,
+    conversationId: string | undefined,
+    res: Response,
+  ): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(400).json({ message: 'User not found' });
+      return;
+    }
+    if (user.credits < 1) {
+      res.status(400).json({ message: 'Insufficient credits' });
+      return;
+    }
+
+    try {
+      this.checkRateLimit(userId);
+    } catch {
+      res.status(429).json({ message: 'Rate limit exceeded — maximum 20 messages per minute' });
+      return;
+    }
+
+    let conversation: Conversation;
+    if (conversationId) {
+      const found = await this.prisma.conversation.findUnique({ where: { id: conversationId } });
+      if (!found) {
+        res.status(404).json({ message: 'Conversation not found' });
+        return;
+      }
+      if (found.userId !== userId) {
+        res.status(403).json({ message: 'Forbidden' });
+        return;
+      }
+      conversation = found;
+    } else {
+      const title = message.length > 50 ? message.slice(0, 47) + '...' : message;
+      conversation = await this.prisma.conversation.create({ data: { userId, title } });
+    }
+
+    const [history, memories, facts] = await this.loadContext(conversation.id, userId, message);
+    const resolvedModel = model || user.aiModel || DEFAULT_MODEL;
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const sendEvent = (data: object) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+    let reply = '';
+    let inputTokens: number | undefined;
+    let outputTokens: number | undefined;
+
+    try {
+      const stream = await client.chat.completions.create({
+        model: resolvedModel,
+        max_tokens: 1024,
+        stream: true,
+        stream_options: { include_usage: true },
+        messages: this.buildMessages(facts, memories, history, message),
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          reply += content;
+          sendEvent({ type: 'chunk', content });
+        }
+        if (chunk.usage) {
+          inputTokens = chunk.usage.prompt_tokens;
+          outputTokens = chunk.usage.completion_tokens;
+        }
+      }
+    } catch (err: any) {
+      this.logger.error('OpenRouter streaming error', err?.message);
+      sendEvent({ type: 'error', message: 'Failed to get response from AI' });
+      res.end();
+      return;
+    }
+
+    if (!reply) {
+      sendEvent({ type: 'error', message: 'Empty response from AI' });
+      res.end();
+      return;
+    }
+
+    const creditCost = Math.max(1, Math.ceil(((inputTokens ?? 0) + (outputTokens ?? 0)) / 1000));
+
+    const [, , , updatedUser] = await this.prisma.$transaction([
+      this.prisma.message.create({
+        data: { conversationId: conversation.id, role: 'user', content: message, model: resolvedModel },
+      }),
+      this.prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          role: 'assistant',
+          content: reply,
+          model: resolvedModel,
+          inputTokens,
+          outputTokens,
+        },
+      }),
+      this.prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { updatedAt: new Date() },
+      }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { credits: { decrement: creditCost } },
+        select: { credits: true },
+      }),
+    ]);
+
+    sendEvent({ type: 'done', credits: updatedUser.credits, conversationId: conversation.id });
+    res.end();
+
+    this.summaryService.checkAndSummarize(conversation.id, userId, reply).catch(() => {});
   }
 
   async getConversations(userId: string) {
@@ -145,7 +331,6 @@ export class ChatService {
     return { message: 'Conversation deleted' };
   }
 
-  // Runs every day at 02:00 — deletes conversations inactive for more than 7 days
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async handleExpiredConversations() {
     const cutoff = new Date();

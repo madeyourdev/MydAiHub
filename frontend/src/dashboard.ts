@@ -48,7 +48,46 @@ async function logout() {
   window.location.href = '/';
 }
 
+async function loadMemories() {
+  const res = await fetch(`${API_URL}/users/me/memories`, { credentials: 'include' });
+  if (!res.ok) return;
+
+  const memories: { id: string; fact: string }[] = await res.json();
+  const list = document.getElementById('memoryList')!;
+  const empty = document.getElementById('memoryEmpty')!;
+
+  if (!memories.length) {
+    empty.style.display = 'flex';
+    return;
+  }
+
+  empty.style.display = 'none';
+  memories.forEach(m => {
+    const chip = document.createElement('div');
+    chip.className = 'memory-chip';
+    chip.dataset.id = m.id;
+    chip.innerHTML = `<span class="memory-fact">${m.fact}</span><button class="memory-delete" title="ลบ">✕</button>`;
+    chip.querySelector('.memory-delete')!.addEventListener('click', () => deleteMemory(m.id, chip));
+    list.appendChild(chip);
+  });
+}
+
+async function deleteMemory(id: string, el: HTMLElement) {
+  const res = await fetch(`${API_URL}/users/me/memories/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) return;
+
+  el.remove();
+  const list = document.getElementById('memoryList')!;
+  if (!list.querySelector('.memory-chip')) {
+    document.getElementById('memoryEmpty')!.style.display = 'flex';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadUser();
+  loadMemories();
   document.getElementById('logoutBtn')!.addEventListener('click', logout);
 });
